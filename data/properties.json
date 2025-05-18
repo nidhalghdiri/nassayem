@@ -1,0 +1,158 @@
+[
+  {
+    "id": "1",
+    "title": "Al-Saada Commercial District, Salalah 211",
+    "location": "Al-Saada Commercial District, Salalah",
+    "price": "OMR 250/month",
+    "status": "For Rent",
+    "description": "Located in the vibrant Al-Saada Commercial District, this property offers prime access to Salalah's bustling business hub. Just minutes away from major offices, restaurants, and retail outlets, it’s perfect for commercial spaces, showrooms, or offices.",
+    "features": [
+      { "icon": "icon-bed", "label": "Bedrooms", "value": "2" },
+      { "icon": "icon-bathtub", "label": "Bathrooms", "value": "2" },
+      { "icon": "icon-ruler", "label": "Size", "value": "6,000 SqFT" }
+    ],
+    "amenities": [
+      "Smoke alarm",
+      "Carbon monoxide alarm",
+      "First aid kit",
+      "Self check-in with lockbox",
+      "Security cameras"
+    ],
+    "nearby": [
+      { "label": "School", "distance": "0.7 km" },
+      { "label": "University", "distance": "1.3 km" },
+      { "label": "Grocery center", "distance": "0.6 km" },
+      { "label": "Hospital", "distance": "0.4 km" }
+    ],
+    "images": [
+      "/images/banner/banner-property-1-1.jpg",
+      "/images/banner/banner-property-1-2.jpg",
+      "/images/banner/banner-property-1-3.jpg",
+      "/images/banner/banner-property-1-4.jpg",
+      "/images/banner/banner-property-1-5.jpg"
+    ],
+    "video": "https://youtu.be/MLpWrANjFbI ",
+    "map": {
+      "address": "Al-Saada Commercial District, Salalah 211 Dhofar",
+      "downtown": "5 min",
+      "fll": "15 min"
+    }
+  },
+  {
+    "id": "2",
+    "title": "Modern Villa in North Awaqad",
+    "location": "North Awaqad, Near Salalah Mall",
+    "price": "OMR 400/month",
+    "status": "For Rent",
+    "description": "A modern villa located in North Awaqad, just a short drive from Salalah Mall. This property is ideal for families looking for comfort and convenience.",
+    "features": [
+      { "icon": "icon-bed", "label": "Bedrooms", "value": "4" },
+      { "icon": "icon-bathtub", "label": "Bathrooms", "value": "3" },
+      { "icon": "icon-ruler", "label": "Size", "value": "3,500 SqFT" }
+    ],
+    "amenities": [
+      "Air conditioning",
+      "Balcony",
+      "Parking space",
+      "Swimming pool",
+      "Garden"
+    ],
+    "nearby": [
+      { "label": "School", "distance": "1.5 km" },
+      { "label": "Mall", "distance": "0.3 km" },
+      { "label": "Restaurant", "distance": "0.8 km" },
+      { "label": "Hospital", "distance": "2.0 km" }
+    ],
+    "images": [
+      "/images/banner/banner-property-2-1.jpg",
+      "/images/banner/banner-property-2-2.jpg",
+      "/images/banner/banner-property-2-3.jpg",
+      "/images/banner/banner-property-2-4.jpg",
+      "/images/banner/banner-property-2-5.jpg"
+    ],
+    "video": "https://youtu.be/example-video-id ",
+    "map": {
+      "address": "North Awaqad, Near Salalah Mall",
+      "downtown": "12 min",
+      "fll": "25 min"
+    }
+  },
+  {
+    "id": "3",
+    "title": "Spacious Apartment in Al-Saada",
+    "location": "Al-Saada, Next to Nasto Hypermarket",
+    "price": "OMR 200/month",
+    "status": "For Rent",
+    "description": "A spacious apartment located in Al-Saada, next to Nasto Hypermarket. Perfect for professionals and small families, this property offers modern amenities and easy access to shopping centers.",
+    "features": [
+      { "icon": "icon-bed", "label": "Bedrooms", "value": "2" },
+      { "icon": "icon-bathtub", "label": "Bathrooms", "value": "1" },
+      { "icon": "icon-ruler", "label": "Size", "value": "1,000 SqFT" }
+    ],
+    "amenities": [
+      "Wi-Fi",
+      "Kitchen appliances",
+      "Laundry room",
+      "24/7 security",
+      "Parking"
+    ],
+    "nearby": [
+      { "label": "Hypermarket", "distance": "0.1 km" },
+      { "label": "School", "distance": "1.0 km" },
+      { "label": "Park", "distance": "0.5 km" },
+      { "label": "Restaurant", "distance": "0.3 km" }
+    ],
+    "images": [
+      "/images/banner/banner-property-3-1.jpg",
+      "/images/banner/banner-property-3-2.jpg",
+      "/images/banner/banner-property-3-3.jpg",
+      "/images/banner/banner-property-3-4.jpg",
+      "/images/banner/banner-property-3-5.jpg"
+    ],
+    "video": "https://youtu.be/example-video-id ",
+    "map": {
+      "address": "Al-Saada, Next to Nasto Hypermarket",
+      "downtown": "8 min",
+      "fll": "18 min"
+    }
+  },
+  {
+    "id": "4",
+    "title": "Luxury Villa in Al-Wadi",
+    "location": "Al-Wadi, Opposite Garden Mall",
+    "price": "OMR 600/month",
+    "status": "For Sale",
+    "description": "A luxury villa located in Al-Wadi, opposite Garden Mall. This property boasts stunning architecture, premium finishes, and a private garden, making it an ideal choice for those seeking elegance and comfort.",
+    "features": [
+      { "icon": "icon-bed", "label": "Bedrooms", "value": "5" },
+      { "icon": "icon-bathtub", "label": "Bathrooms", "value": "4" },
+      { "icon": "icon-ruler", "label": "Size", "value": "5,000 SqFT" }
+    ],
+    "amenities": [
+      "Private garden",
+      "Swimming pool",
+      "Gym",
+      "Smart home system",
+      "Parking for 3 cars"
+    ],
+    "nearby": [
+      { "label": "Mall", "distance": "0.2 km" },
+      { "label": "School", "distance": "1.5 km" },
+      { "label": "Hospital", "distance": "2.2 km" },
+      { "label": "Park", "distance": "0.8 km" }
+    ],
+    "images": [
+      "/images/banner/banner-property-4-1.jpg",
+      "/images/banner/banner-property-4-2.jpg",
+      "/images/banner/banner-property-4-3.jpg",
+      "/images/banner/banner-property-4-4.jpg",
+      "/images/banner/banner-property-4-5.jpg"
+    ],
+    "video": "https://youtu.be/example-video-id ",
+    "map": {
+      "address": "Al-Wadi, Opposite Garden Mall",
+      "downtown": "15 min",
+      "fll": "30 min"
+    }
+  }
+]
