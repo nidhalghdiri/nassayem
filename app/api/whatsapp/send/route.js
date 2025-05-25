@@ -1,0 +1,45 @@
+// /app/api/whatsapp/send/route.js
+
+import axios from "axios";
+
+export async function POST(request) {
+  try {
+    const { to, message } = await request.json();
+
+    // WhatsApp Business API endpoint
+    const url = `https://graph.facebook.com/v18.0/701862303001191/messages`;
+
+    const data = {
+      messaging_product: "whatsapp",
+      to,
+      type: "text",
+      text: { body: message },
+    };
+    // const data = {
+    //   messaging_product: "whatsapp",
+    //   to: to,
+    //   type: "template",
+    //   template: {
+    //     name: "ns_welcome",
+    //     language: {
+    //       code: "en_US",
+    //     },
+    //   },
+    // };
+
+    const response = await axios.post(url, data, {
+      headers: {
+        Authorization: `Bearer EAAQ8GvpD3gYBO0qnOZCHrX7IKSywZAlJBHH9oD85u4orc4iRNowaZBojBs2opRjTfqtd6ajEVtL4jL8Q1f6PARCqfWLQDkVTg6f7f9Dx7NfSYbkXPzQNaa6QveERBi8srzGZAiHzdzwu6NWah0ZCA8GVB8cHL8GElXprbAkfd6g6qwT8DEEZCH4Vx4PwTvhvfvCwZDZD`,
+        "Content-Type": "application/json",
+      },
+    });
+    console.log("Sending Res: ", response);
+    return Response.json({ success: true, data: response.data });
+  } catch (error) {
+    console.error("Error sending WhatsApp message:", error);
+    return Response.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
+  }
+}
