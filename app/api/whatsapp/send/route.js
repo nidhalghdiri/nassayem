@@ -33,7 +33,7 @@ export async function POST(request) {
         "Content-Type": "application/json",
       },
     });
-    console.log("Sending Res: ", response);
+    console.log("Sending Res: ", response.data);
     return Response.json({ success: true, data: response.data });
   } catch (error) {
     console.error("Error sending WhatsApp message:", error);

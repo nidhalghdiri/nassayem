@@ -21,16 +21,27 @@ export async function POST(request) {
 // /app/api/webhook/route.js
 
 export async function GET(request) {
+  // Extract query parameters from the request
   const mode = request.nextUrl.searchParams.get("hub.mode");
   const token = request.nextUrl.searchParams.get("hub.verify_token");
   const challenge = request.nextUrl.searchParams.get("hub.challenge");
 
+  // Verify the token matches your expected verify token
   if (mode === "subscribe" && token === "ns_whatsapp") {
-    return Response.json({ success: true, challenge }, { status: 200 });
+    // Return the challenge as a plain text response
+    return new Response(challenge, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/plain", // Ensure the response is plain text
+      },
+    });
   }
 
-  return Response.json(
-    { success: false, error: "Invalid token" },
-    { status: 403 }
-  );
+  // If the token doesn't match, return an error response
+  return new Response("Invalid token", {
+    status: 403,
+    headers: {
+      "Content-Type": "text/plain",
+    },
+  });
 }
