@@ -15,26 +15,31 @@ export async function POST(request) {
       type: "text",
       text: { body: message },
     };
-    // const data = {
-    //   messaging_product: "whatsapp",
-    //   to: to,
-    //   type: "template",
-    //   template: {
-    //     name: "ns_welcome",
-    //     language: {
-    //       code: "en_US",
-    //     },
-    //   },
-    // };
 
-    const response = await axios.post(url, data, {
-      headers: {
-        Authorization: `Bearer EAAQ8GvpD3gYBO0qnOZCHrX7IKSywZAlJBHH9oD85u4orc4iRNowaZBojBs2opRjTfqtd6ajEVtL4jL8Q1f6PARCqfWLQDkVTg6f7f9Dx7NfSYbkXPzQNaa6QveERBi8srzGZAiHzdzwu6NWah0ZCA8GVB8cHL8GElXprbAkfd6g6qwT8DEEZCH4Vx4PwTvhvfvCwZDZD`,
-        "Content-Type": "application/json",
-      },
-    });
-    console.log("Sending Res: ", response.data);
-    return Response.json({ success: true, data: response.data });
+    try {
+      const response = await axios.post(url, data, {
+        headers: {
+          Authorization: `Bearer EAAQ8GvpD3gYBO0qnOZCHrX7IKSywZAlJBHH9oD85u4orc4iRNowaZBojBs2opRjTfqtd6ajEVtL4jL8Q1f6PARCqfWLQDkVTg6f7f9Dx7NfSYbkXPzQNaa6QveERBi8srzGZAiHzdzwu6NWah0ZCA8GVB8cHL8GElXprbAkfd6g6qwT8DEEZCH4Vx4PwTvhvfvCwZDZD`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      // Save sent message to Firebase
+      await addDoc(chatRef, {
+        text: message,
+        sender: "user",
+        timestamp: serverTimestamp(),
+        type: "whatsapp",
+      });
+
+      return Response.json({ success: true, data: response.data });
+    } catch (error) {
+      console.error(
+        "Error sending message:",
+        error.response?.data || error.message
+      );
+      return Response.json({ success: false, error: error.message });
+    }
   } catch (error) {
     console.error("Error sending WhatsApp message:", error);
     return Response.json(

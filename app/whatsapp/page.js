@@ -2,6 +2,7 @@
 
 "use client";
 
+import WhatsAppChat from "@/components/elements/WhatsAppChat";
 import { useState } from "react";
 
 export default function WhatsAppPage() {
@@ -26,7 +27,7 @@ export default function WhatsAppPage() {
     <div>
       <h1>WhatsApp Messaging Interface</h1>
 
-      <form onSubmit={handleSubmit}>
+      {/* <form onSubmit={handleSubmit}>
         <div>
           <label>To (Phone Number):</label>
           <input
@@ -56,7 +57,8 @@ export default function WhatsAppPage() {
           <h3>Response:</h3>
           <pre>{JSON.stringify(response, null, 2)}</pre>
         </div>
-      )}
+      )} */}
+      <WhatsAppChat />
     </div>
   );
 }

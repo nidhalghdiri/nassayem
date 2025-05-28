@@ -1,30 +1,31 @@
 // /app/api/webhook/route.js
+import { db, chatRef } from "@/lib/firebase";
+import { addDoc, serverTimestamp } from "firebase/firestore";
 export async function POST(request) {
   try {
     const body = await request.json();
 
-    // Log the incoming payload for debugging
-    console.log("Incoming WhatsApp Webhook:", JSON.stringify(body, null, 2));
-
-    // Extract the message details
     const entry = body.entry?.[0];
     const changes = entry?.changes?.[0];
     const message = changes?.value?.messages?.[0];
 
     if (message) {
-      const sender = message.from; // Sender's phone number
-      const text = message.text?.body; // Message text
+      const sender = message.from;
+      const text = message.text?.body || "Media/Unsupported";
+      // Save message to Firebase
+      await addDoc(chatRef, {
+        text: text,
+        sender: sender,
+        timestamp: serverTimestamp(),
+        type: "whatsapp",
+      });
 
-      console.log(`Received message from ${sender}: ${text}`);
-
-      // Respond to the message (optional)
-      replyToMessage(sender, `Thank you for your message: ${text}`);
+      console.log("Message stored in Firebase:", text);
     }
 
-    // Acknowledge receipt of the message
     return Response.json({ success: true }, { status: 200 });
   } catch (error) {
-    console.error("Error handling webhook:", error);
+    console.error("Webhook error:", error.message);
     return Response.json(
       { success: false, error: error.message },
       { status: 500 }
