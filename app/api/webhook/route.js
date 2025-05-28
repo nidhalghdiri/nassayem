@@ -44,9 +44,9 @@ function replyToMessage(to, message) {
   };
 
   axios
-    .post(`https://graph.facebook.com/v18.0/701862303001191/messages`, data, {
+    .post(`https://graph.facebook.com/v22.0/701862303001191/messages`, data, {
       headers: {
-        Authorization: `Bearer EAAQ8GvpD3gYBO0qnOZCHrX7IKSywZAlJBHH9oD85u4orc4iRNowaZBojBs2opRjTfqtd6ajEVtL4jL8Q1f6PARCqfWLQDkVTg6f7f9Dx7NfSYbkXPzQNaa6QveERBi8srzGZAiHzdzwu6NWah0ZCA8GVB8cHL8GElXprbAkfd6g6qwT8DEEZCH4Vx4PwTvhvfvCwZDZD`,
+        Authorization: `Bearer EAAQ8GvpD3gYBOyBjBiZBEceqkSAzoXdZBCRQxbREouAnL8DtG8wKwYvONH8pPwD5GLMCcYX24HLyQxkGAEKRQt0aarzh7SIA4xWSrS7CN0FEHwwAeNV6kzfA5UWxOQCdCHCECEF1vccf54LFPCxRo4yWYKZBBrLxP3DMiordKJ0yw3BL83vZAGdC20yeTrViqAZDZD`,
         "Content-Type": "application/json",
       },
     })
