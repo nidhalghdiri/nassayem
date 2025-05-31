@@ -10,13 +10,17 @@
     "sass": "sass --watch public/scss/app.scss:public/css/styles.css"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^1.3.22",
     "@babel/runtime": "^7.24.5",
     "@headlessui/react": "^2.0.3",
+    "ai": "^4.3.16",
     "axios": "^1.9.0",
     "chart.js": "^4.4.2",
     "firebase": "^11.8.1",
+    "franc": "^6.2.0",
     "leaflet": "^1.9.4",
     "next": "14.1.4",
+    "openai": "^4.103.0",
     "react": "18.2.0",
     "react-chartjs-2": "^5.2.0",
     "react-countup": "^6.5.3",

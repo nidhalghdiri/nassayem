@@ -1,6 +1,7 @@
 // /app/api/whatsapp/send/route.js
 
 import axios from "axios";
+import { collection, addDoc, doc, setDoc, getDoc } from "firebase/firestore";
 
 export async function POST(request) {
   try {
@@ -24,12 +25,14 @@ export async function POST(request) {
         },
       });
 
-      // Save sent message to Firebase
-      await addDoc(chatRef, {
+      // Save message to Firebase
+      const messagesRef = collection(db, "conversations", to, "messages");
+      await addDoc(messagesRef, {
         text: message,
-        sender: "user",
-        timestamp: serverTimestamp(),
-        type: "whatsapp",
+        sender: "agent",
+        timestamp: Date.now(),
+        platform: "web",
+        read: true,
       });
 
       return Response.json({ success: true, data: response.data });

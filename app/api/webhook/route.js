@@ -1,65 +1,130 @@
 // /app/api/webhook/route.js
+import getAIResponse from "@/lib/ai";
 import { db, chatRef } from "@/lib/firebase";
-import { addDoc, serverTimestamp } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  doc,
+  setDoc,
+  getDoc,
+  getDocs,
+} from "firebase/firestore";
 export async function POST(request) {
   try {
     const body = await request.json();
+    const message = body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
 
-    const entry = body.entry?.[0];
-    const changes = entry?.changes?.[0];
-    const message = changes?.value?.messages?.[0];
+    if (!message || !message.from) return Response.json({ success: true });
 
-    if (message) {
-      const sender = message.from;
-      const text = message.text?.body || "Media/Unsupported";
-      // Save message to Firebase
-      await addDoc(chatRef, {
-        text: text,
-        sender: sender,
-        timestamp: serverTimestamp(),
-        type: "whatsapp",
+    const waId = message.from;
+    const text = message.text?.body || "[Media]";
+    const timestamp = Date.now();
+
+    // Save or update conversation
+    const convRef = doc(db, "conversations", waId);
+    const convSnap = await getDoc(convRef);
+    if (!convSnap.exists()) {
+      await setDoc(convRef, {
+        customerPhoneNumber: waId,
+        startedAt: timestamp,
+        status: "active",
+        lastMessage: { text, timestamp },
+        sender: "customer",
       });
-
-      console.log("Message stored in Firebase:", text);
+    } else {
+      await setDoc(
+        convRef,
+        {
+          lastMessage: { text, timestamp },
+        },
+        { merge: true }
+      );
     }
 
-    return Response.json({ success: true }, { status: 200 });
+    // Save message to subcollection
+    const msgRef = collection(db, "conversations", waId, "messages");
+    await addDoc(msgRef, {
+      text,
+      sender: "customer",
+      timestamp,
+      platform: "whatsapp",
+      read: false,
+    });
+
+    // Get property data from Firebase or NetSuite
+    const propertyDetails = {
+      title: "Al-Saada Commercial Apartment",
+      location: "Al-Saada, Salalah",
+      bedrooms: 2,
+      bathrooms: 2,
+      size: "1200",
+      pricing: { monthly: 250 },
+      features: ["Furnished", "AC", "WiFi"],
+    };
+
+    // Fetch conversation history
+    const historySnapshot = await getDocs(
+      collection(db, "conversations", waId, "messages")
+    );
+    const conversationHistory = historySnapshot.docs.map((doc) => doc.data());
+
+    // Get customer data (from Firebase or NetSuite)
+    const customerData = await fetchCustomerFromNetSuite(waId); // You'll implement this later
+
+    // Generate AI response
+    const aiResponse = await getAIResponse(
+      conversationHistory,
+      propertyDetails,
+      customerData
+    );
+
+    // Send AI reply via WhatsApp Business API
+    const whatsappResponse = await sendWhatsAppMessage(waId, aiResponse.reply);
+
+    // Save AI reply to Firebase
+    await addDoc(collection(db, "conversations", waId, "messages"), {
+      text: aiResponse.reply,
+      sender: "bot",
+      timestamp: Date.now(),
+      platform: "web",
+      read: false,
+    });
+
+    return Response.json({ success: true });
   } catch (error) {
     console.error("Webhook error:", error.message);
-    return Response.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return Response.json({ success: false, error: error.message });
   }
 }
+// Dummy placeholder – replace with actual NetSuite call
+async function fetchCustomerFromNetSuite(phoneNumber) {
+  // Simulate fetching from NetSuite
+  return {
+    name: "Ahmed Al-Hinai",
+    phone: phoneNumber,
+    bookings: [{ unitId: "APT123", status: "confirmed" }],
+  };
+}
 
-// Function to send a reply
-function replyToMessage(to, message) {
-  const axios = require("axios");
-
+// Function to send WhatsApp message
+async function sendWhatsAppMessage(to, message) {
+  const url = `https://graph.facebook.com/v22.0/701862303001191/messages`;
   const data = {
     messaging_product: "whatsapp",
     to,
-    type: "text",
     text: { body: message },
   };
 
-  axios
-    .post(`https://graph.facebook.com/v22.0/701862303001191/messages`, data, {
-      headers: {
-        Authorization: `Bearer EAAQ8GvpD3gYBOyBjBiZBEceqkSAzoXdZBCRQxbREouAnL8DtG8wKwYvONH8pPwD5GLMCcYX24HLyQxkGAEKRQt0aarzh7SIA4xWSrS7CN0FEHwwAeNV6kzfA5UWxOQCdCHCECEF1vccf54LFPCxRo4yWYKZBBrLxP3DMiordKJ0yw3BL83vZAGdC20yeTrViqAZDZD`,
-        "Content-Type": "application/json",
-      },
-    })
-    .then((response) => {
-      console.log("Reply sent successfully:", response.data);
-    })
-    .catch((error) => {
-      console.error(
-        "Error sending reply:",
-        error.response?.data || error.message
-      );
-    });
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer EAAQ8GvpD3gYBOyBjBiZBEceqkSAzoXdZBCRQxbREouAnL8DtG8wKwYvONH8pPwD5GLMCcYX24HLyQxkGAEKRQt0aarzh7SIA4xWSrS7CN0FEHwwAeNV6kzfA5UWxOQCdCHCECEF1vccf54LFPCxRo4yWYKZBBrLxP3DMiordKJ0yw3BL83vZAGdC20yeTrViqAZDZD`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  return response.json();
 }
 
 // /app/api/webhook/route.js
