@@ -11,6 +11,16 @@ import {
   addDoc,
   orderBy,
 } from "firebase/firestore";
+import {
+  FiSend,
+  FiUser,
+  FiMessageSquare,
+  FiMenu,
+  FiX,
+  FiCheck,
+  FiClock,
+} from "react-icons/fi";
+import "/public/css/whatsapp.css";
 
 export default function WhatsAppChat() {
   const [input, setInput] = useState("");
@@ -18,6 +28,8 @@ export default function WhatsAppChat() {
   const [conversations, setConversations] = useState([]);
   const [selectedContact, setSelectedContact] = useState(null);
   const [isSending, setIsSending] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [handoff, setHandoff] = useState(false);
   const messagesEndRef = useRef(null);
 
   // Fetch all conversations sorted by last message timestamp
@@ -58,13 +70,38 @@ export default function WhatsAppChat() {
     const q = query(messagesRef, orderBy("timestamp", "asc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const list = [];
-      snapshot.forEach((doc) => list.push({ id: doc.id, ...doc.data() }));
+      snapshot.forEach((doc) => {
+        if (doc.exists()) {
+          list.push({ id: doc.id, ...doc.data() });
+          setHandoff(doc.data().handoff || false);
+        }
+      });
       setMessages(list);
       scrollToBottom();
     });
 
     return () => unsubscribe();
   }, [selectedContact]);
+
+  const toggleHandoff = async () => {
+    try {
+      const response = await fetch(
+        `/api/conversations/${selectedContact}/handoff`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            handoff: !handoff,
+            agentId: "12345",
+          }),
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to toggle handoff");
+    } catch (error) {
+      console.error("Error toggling handoff:", error);
+    }
+  };
 
   // Auto-scroll to bottom of messages
   const scrollToBottom = () => {
@@ -83,20 +120,20 @@ export default function WhatsAppChat() {
 
     try {
       // First save to Firebase as "sending" state
-      const messagesRef = collection(
-        db,
-        "conversations",
-        selectedContact,
-        "messages"
-      );
-      await addDoc(messagesRef, {
-        text: messageText,
-        sender: "agent",
-        timestamp: Date.now(),
-        platform: "web",
-        read: false,
-        status: "sending",
-      });
+      // const messagesRef = collection(
+      //   db,
+      //   "conversations",
+      //   selectedContact,
+      //   "messages"
+      // );
+      // await addDoc(messagesRef, {
+      //   text: messageText,
+      //   sender: "agent",
+      //   timestamp: Date.now(),
+      //   platform: "web",
+      //   read: false,
+      //   status: "sending",
+      // });
 
       // Send message via WhatsApp Business API
       console.log(
@@ -108,6 +145,7 @@ export default function WhatsAppChat() {
         body: JSON.stringify({
           to: selectedContact,
           message: messageText,
+          senderType: "agent", // Add this parameter
         }),
       });
 
@@ -146,19 +184,59 @@ export default function WhatsAppChat() {
       minute: "2-digit",
     });
   };
-
+  const formatDate = (timestamp) => {
+    return new Date(timestamp).toLocaleDateString([], {
+      weekday: "long",
+      month: "short",
+      day: "numeric",
+    });
+  };
+  // Toggle mobile menu
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+  // Group messages by date
+  const groupedMessages = messages.reduce((acc, message) => {
+    const date = formatDate(message.timestamp);
+    if (!acc[date]) {
+      acc[date] = [];
+    }
+    acc[date].push(message);
+    return acc;
+  }, {});
   return (
-    <div className="whatsapp-ui">
+    <div className="whatsapp-container">
+      {/* Mobile Header */}
+      <div className="mobile-header">
+        <button className="menu-button" onClick={toggleMobileMenu}>
+          {mobileMenuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
+        </button>
+        {selectedContact && (
+          <div className="contact-info">
+            <div className="avatar">
+              <FiUser size={20} />
+            </div>
+            <h3>
+              {conversations.find((c) => c.id === selectedContact)
+                ?.customerName || selectedContact}
+            </h3>
+          </div>
+        )}
+      </div>
+
       {/* Sidebar */}
-      <div className="sidebar">
+      <div className={`sidebar ${mobileMenuOpen ? "open" : ""}`}>
         <div className="sidebar-header">
-          <h3>WhatsApp Conversations</h3>
+          <h2>Conversations</h2>
         </div>
         <div className="conversation-list">
           {conversations.map((conv) => (
             <div
               key={conv.id}
-              onClick={() => setSelectedContact(conv.id)}
+              onClick={() => {
+                setSelectedContact(conv.id);
+                setMobileMenuOpen(false);
+              }}
               className={`conversation-item ${
                 selectedContact === conv.id ? "active" : ""
               }`}
@@ -176,8 +254,12 @@ export default function WhatsAppChat() {
                   </span>
                 </div>
                 <p className="last-message">
-                  {conv.lastMessage?.text.slice(0, 50)}...
+                  {conv.lastMessage?.text.slice(0, 30)}...
                 </p>
+                {conv.lastMessage?.sender === "customer" &&
+                  !conv.lastMessage?.read && (
+                    <span className="unread-badge"></span>
+                  )}
               </div>
             </div>
           ))}
@@ -189,33 +271,70 @@ export default function WhatsAppChat() {
         {selectedContact ? (
           <>
             <div className="chat-header">
-              <h3>
-                {conversations.find((c) => c.id === selectedContact)
-                  ?.customerName || selectedContact}
-              </h3>
+              <div className="contact-info">
+                <div className="avatar">
+                  <FiUser size={20} />
+                </div>
+                <div>
+                  <h3>
+                    {conversations.find((c) => c.id === selectedContact)
+                      ?.customerName || selectedContact}
+                  </h3>
+                  <p className="status">
+                    {handoff ? "Agent handling" : "Bot handling"}
+                  </p>
+                </div>
+              </div>
+              <div className="handoff-toggle">
+                <label className="switch">
+                  <input
+                    type="checkbox"
+                    checked={handoff}
+                    onChange={() => setHandoff(!handoff)}
+                  />
+                  <span className="slider round"></span>
+                </label>
+                <span>{handoff ? "Manual" : "Auto"}</span>
+              </div>
             </div>
 
-            <div className="chat-box">
-              {messages.length === 0 ? (
-                <div className="no-messages">
-                  No messages yet. Start the conversation!
+            <div className="chat-messages">
+              {Object.entries(groupedMessages).map(([date, dateMessages]) => (
+                <div key={date} className="date-divider">
+                  <span>{date}</span>
                 </div>
-              ) : (
-                messages.map((msg) => (
-                  <div key={msg.id} className={`message ${msg.sender}`}>
-                    <div className="message-content">
-                      <p>{msg.text}</p>
-                      <span className="message-time">
-                        {formatTime(msg.timestamp)}
-                      </span>
+              ))}
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`message ${msg.sender} ${msg.status || ""}`}
+                >
+                  <div className="message-content">
+                    <p>{msg.text}</p>
+                    <div className="message-footer">
+                      <span className="time">{formatTime(msg.timestamp)}</span>
+                      {msg.sender !== "customer" && (
+                        <span className="status-icon">
+                          {msg.status === "sending" ? (
+                            <FiClock size={12} />
+                          ) : msg.status === "sent" ? (
+                            <FiCheck size={12} />
+                          ) : msg.status === "delivered" ? (
+                            <>
+                              <FiCheck size={12} />
+                              <FiCheck size={12} style={{ marginLeft: -4 }} />
+                            </>
+                          ) : null}
+                        </span>
+                      )}
                     </div>
                   </div>
-                ))
-              )}
+                </div>
+              ))}
               <div ref={messagesEndRef} />
             </div>
 
-            <form onSubmit={sendMessage} className="chat-input">
+            <form onSubmit={sendMessage} className="message-input">
               <input
                 type="text"
                 value={input}
@@ -224,222 +343,21 @@ export default function WhatsAppChat() {
                 disabled={isSending}
               />
               <button type="submit" disabled={isSending || !input.trim()}>
-                {isSending ? "Sending..." : "Send"}
+                {isSending ? (
+                  <div className="spinner"></div>
+                ) : (
+                  <FiSend size={20} />
+                )}
               </button>
             </form>
           </>
         ) : (
           <div className="no-chat-selected">
+            <FiMessageSquare size={48} />
             <p>Select a conversation to start chatting</p>
           </div>
         )}
       </div>
-
-      <style jsx>{`
-        .whatsapp-ui {
-          display: flex;
-          height: 80vh;
-          max-width: 1200px;
-          margin: 20px auto;
-          border: 1px solid #e1e1e1;
-          border-radius: 12px;
-          overflow: hidden;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .sidebar {
-          width: 30%;
-          background-color: #f8f9fa;
-          border-right: 1px solid #e1e1e1;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .sidebar-header {
-          padding: 15px;
-          border-bottom: 1px solid #e1e1e1;
-          background-color: #f0f2f5;
-        }
-
-        .conversation-list {
-          flex: 1;
-          overflow-y: auto;
-        }
-
-        .conversation-item {
-          display: flex;
-          padding: 12px;
-          cursor: pointer;
-          border-bottom: 1px solid #e1e1e1;
-          transition: background-color 0.2s;
-        }
-
-        .conversation-item:hover {
-          background-color: #f0f2f5;
-        }
-
-        .conversation-item.active {
-          background-color: #e1f5fe;
-        }
-
-        .avatar {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          background-color: #25d366;
-          color: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-right: 12px;
-          font-weight: bold;
-        }
-
-        .conversation-details {
-          flex: 1;
-          min-width: 0;
-        }
-
-        .conversation-header {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 4px;
-        }
-
-        .time {
-          font-size: 0.8em;
-          color: #666;
-        }
-
-        .last-message {
-          font-size: 0.9em;
-          color: #666;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .chat-area {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          background-color: #e5ddd5;
-          background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4AkEEjIZW4Z1XQAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAAALUlEQVQ4y2NgGAXDADDCGEuWLPkPxJ8/f2b4//8/A1JgZGTEKQYVQxVDig0rAAB2sRBC4S3wJQAAAABJRU5ErkJggg==");
-        }
-
-        .chat-header {
-          padding: 15px;
-          background-color: #f0f2f5;
-          border-bottom: 1px solid #e1e1e1;
-          text-align: center;
-        }
-
-        .chat-box {
-          flex: 1;
-          padding: 20px;
-          overflow-y: auto;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-
-        .no-messages {
-          flex: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #666;
-        }
-
-        .message {
-          max-width: 70%;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .message.customer {
-          align-self: flex-start;
-        }
-
-        .message.agent,
-        .message.bot {
-          align-self: flex-end;
-        }
-
-        .message-content {
-          padding: 10px 15px;
-          border-radius: 8px;
-          position: relative;
-          word-wrap: break-word;
-        }
-
-        .message.customer .message-content {
-          background-color: white;
-          border-top-left-radius: 0;
-        }
-
-        .message.agent .message-content {
-          background-color: #dcf8c6;
-          border-top-right-radius: 0;
-        }
-
-        .message.bot .message-content {
-          background-color: #e5e5ea;
-          border-top-right-radius: 0;
-        }
-
-        .message-time {
-          font-size: 0.7em;
-          color: #666;
-          margin-top: 4px;
-          text-align: right;
-        }
-
-        .chat-input {
-          display: flex;
-          padding: 10px;
-          background-color: #f0f2f5;
-          border-top: 1px solid #e1e1e1;
-        }
-
-        .chat-input input {
-          flex: 1;
-          padding: 12px 15px;
-          border: none;
-          border-radius: 20px;
-          outline: none;
-          font-size: 1em;
-        }
-
-        .chat-input button {
-          margin-left: 10px;
-          padding: 12px 20px;
-          background-color: #25d366;
-          color: white;
-          border: none;
-          border-radius: 20px;
-          cursor: pointer;
-          font-weight: bold;
-          transition: background-color 0.2s;
-        }
-
-        .chat-input button:hover {
-          background-color: #128c7e;
-        }
-
-        .chat-input button:disabled {
-          background-color: #cccccc;
-          cursor: not-allowed;
-        }
-
-        .no-chat-selected {
-          flex: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #666;
-        }
-      `}</style>
     </div>
   );
 }

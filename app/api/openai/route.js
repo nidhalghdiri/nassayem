@@ -1,5 +1,12 @@
 import OpenAI from "openai";
-import { doc, setDoc, collection, addDoc } from "firebase/firestore";
+import {
+  doc,
+  setDoc,
+  collection,
+  addDoc,
+  getDocs,
+  getDoc,
+} from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 const openai = new OpenAI({
@@ -16,6 +23,36 @@ export async function POST(request) {
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
+
+    // Check if conversation is in handoff mode
+    const convDoc = await getDoc(doc(db, "conversations", waId));
+    if (convDoc.exists() && convDoc.data().handoff) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          response: "HANDOFF_ACTIVE",
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Get conversation history
+    const messagesRef = collection(db, "conversations", waId, "messages");
+    const q = query(messagesRef, orderBy("timestamp", "asc"));
+    const snapshot = await getDocs(q);
+
+    // Prepare conversation history for AI
+    const conversationHistory = [];
+    snapshot.forEach((doc) => {
+      const msg = doc.data();
+      conversationHistory.push({
+        role: msg.sender === "customer" ? "user" : "assistant",
+        content: msg.text,
+      });
+    });
 
     // Generate AI response
     const response = await openai.chat.completions.create({
@@ -72,6 +109,7 @@ export async function POST(request) {
      - "فريقنا جاهز لمساعدتكم 24/7."
                     إسم العميل ${customerName || "عميلنا العزيز"}`,
         },
+        ...conversationHistory.slice(-6),
         {
           role: "user",
           content: message,
@@ -84,33 +122,33 @@ export async function POST(request) {
     const aiResponse = response.choices[0]?.message?.content;
 
     // Save AI response to conversation
-    const convRef = doc(db, "conversations", waId);
-    await setDoc(
-      convRef,
-      {
-        lastMessage: {
-          text: aiResponse,
-          timestamp: Date.now(),
-          sender: "bot",
-        },
-        status: "active",
-        updatedAt: new Date().toISOString(),
-      },
-      { merge: true }
-    );
+    // const convRef = doc(db, "conversations", waId);
+    // await setDoc(
+    //   convRef,
+    //   {
+    //     lastMessage: {
+    //       text: aiResponse,
+    //       timestamp: Date.now(),
+    //       sender: "bot",
+    //     },
+    //     status: "active",
+    //     updatedAt: new Date().toISOString(),
+    //   },
+    //   { merge: true }
+    // );
 
-    // Save AI message
-    const messagesRef = collection(db, "conversations", waId, "messages");
-    await addDoc(messagesRef, {
-      text: aiResponse,
-      sender: "bot",
-      timestamp: Date.now(),
-      platform: "whatsapp",
-      read: false,
-      status: "delivered",
-    });
+    // // Save AI message
+    // const messagesRef = collection(db, "conversations", waId, "messages");
+    // await addDoc(messagesRef, {
+    //   text: aiResponse,
+    //   sender: "bot",
+    //   timestamp: Date.now(),
+    //   platform: "whatsapp",
+    //   read: false,
+    //   status: "delivered",
+    // });
 
-    console.log("[OpenAI] Sending Message To " + waId + " : " + aiResponse);
+    // console.log("[OpenAI] Sending Message To " + waId + " : " + aiResponse);
 
     // Send response via WhatsApp
     await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
@@ -121,6 +159,7 @@ export async function POST(request) {
       body: JSON.stringify({
         to: waId,
         message: aiResponse,
+        senderType: "bot", // Add this parameter
       }),
     });
 

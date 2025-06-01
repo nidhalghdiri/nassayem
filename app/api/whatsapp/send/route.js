@@ -2,7 +2,7 @@
 
 import axios from "axios";
 import { collection, addDoc, doc, setDoc, getDoc } from "firebase/firestore";
-
+import { db } from "@/lib/firebase";
 // export async function POST(request) {
 //   try {
 //     const { to, message } = await request.json();
@@ -53,7 +53,7 @@ import { collection, addDoc, doc, setDoc, getDoc } from "firebase/firestore";
 // }
 export async function POST(request) {
   try {
-    const { to, message } = await request.json();
+    const { to, message, senderType = "agent" } = await request.json();
     console.log("[SEND] Sending Message To " + to + " : " + message);
     if (!to || !message) {
       return Response.json(
@@ -79,10 +79,10 @@ export async function POST(request) {
     const messagesRef = collection(db, "conversations", to, "messages");
     const messageRef = await addDoc(messagesRef, {
       text: message,
-      sender: "agent",
+      sender: senderType, // Use the parameter here
       timestamp: Date.now(),
-      platform: "web",
-      read: true,
+      platform: "whatsapp",
+      read: false,
       status: "sending",
     });
 

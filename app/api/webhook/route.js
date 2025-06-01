@@ -1,4 +1,4 @@
-import { doc, setDoc, collection, addDoc } from "firebase/firestore";
+import { doc, setDoc, collection, addDoc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export async function POST(request) {
@@ -36,6 +36,9 @@ export async function POST(request) {
         },
         status: "active",
         updatedAt: new Date().toISOString(),
+        handoff: false, // Default to bot handling
+        handoffInitiatedAt: null,
+        handoffInitiatedBy: null,
       },
       { merge: true }
     );
@@ -55,26 +58,29 @@ export async function POST(request) {
 
     // Generate AI response for text messages only
     if (message.text?.body) {
-      const aiResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/openai`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            waId,
-            message: messageText,
-            customerName,
-          }),
-        }
-      );
-
-      if (!aiResponse.ok) {
-        console.error(
-          "Failed to generate AI response:",
-          await aiResponse.text()
+      const convDoc = await getDoc(doc(db, "conversations", waId));
+      if (!convDoc.exists() || !convDoc.data().handoff) {
+        const aiResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/openai`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              waId,
+              message: messageText,
+              customerName,
+            }),
+          }
         );
+
+        if (!aiResponse.ok) {
+          console.error(
+            "Failed to generate AI response:",
+            await aiResponse.text()
+          );
+        }
       }
     }
 
