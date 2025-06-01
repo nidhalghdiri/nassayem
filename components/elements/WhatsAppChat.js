@@ -99,8 +99,10 @@ export default function WhatsAppChat() {
       });
 
       // Send message via WhatsApp Business API
-
-      const response = await fetch("/api/send", {
+      console.log(
+        "[UI] Sending Message To " + selectedContact + " : " + messageText
+      );
+      const response = await fetch("/api/whatsapp/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

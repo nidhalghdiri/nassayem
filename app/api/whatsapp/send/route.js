@@ -54,7 +54,7 @@ import { collection, addDoc, doc, setDoc, getDoc } from "firebase/firestore";
 export async function POST(request) {
   try {
     const { to, message } = await request.json();
-
+    console.log("[SEND] Sending Message To " + to + " : " + message);
     if (!to || !message) {
       return Response.json(
         { success: false, error: "Missing required fields" },

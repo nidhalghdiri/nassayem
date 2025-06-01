@@ -110,8 +110,10 @@ export async function POST(request) {
       status: "delivered",
     });
 
+    console.log("[OpenAI] Sending Message To " + waId + " : " + aiResponse);
+
     // Send response via WhatsApp
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/send`, {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
