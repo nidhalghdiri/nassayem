@@ -6,6 +6,8 @@ import {
   addDoc,
   getDocs,
   getDoc,
+  query,
+  orderBy,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -101,7 +103,7 @@ export async function POST(request) {
     - لا تذكر أسعارًا تفصيلية إلا إذا كانت متوفرة في قاعدة البيانات.
     - إذا كان السؤال خارج نطاقك، قدم بيانات التواصل مباشرة:
       - للأسعار أو الحجوزات، راسلنا على: +968 98590405  
-      أو زور موقعنا: [www.nassayem.com](https://nassayem.com )  
+      أو زور موقعنا: www.nassayem.com  
 5. **التشجيع على الإيجار**:
    - ركز على المزايا الإيجابية للشركة مثل:
      - "نسعى لراحتكم مع خدماتنا المتكاملة."
