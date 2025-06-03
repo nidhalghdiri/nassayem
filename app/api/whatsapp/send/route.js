@@ -3,59 +3,11 @@
 import axios from "axios";
 import { collection, addDoc, doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-// export async function POST(request) {
-//   try {
-//     const { to, message } = await request.json();
-
-//     // WhatsApp Business API endpoint
-//     const url = `https://graph.facebook.com/v18.0/701862303001191/messages`;
-
-//     const data = {
-//       messaging_product: "whatsapp",
-//       to,
-//       type: "text",
-//       text: { body: message },
-//     };
-
-//     try {
-//       const response = await axios.post(url, data, {
-//         headers: {
-//           Authorization: `Bearer EAAQ8GvpD3gYBO0qnOZCHrX7IKSywZAlJBHH9oD85u4orc4iRNowaZBojBs2opRjTfqtd6ajEVtL4jL8Q1f6PARCqfWLQDkVTg6f7f9Dx7NfSYbkXPzQNaa6QveERBi8srzGZAiHzdzwu6NWah0ZCA8GVB8cHL8GElXprbAkfd6g6qwT8DEEZCH4Vx4PwTvhvfvCwZDZD`,
-//           "Content-Type": "application/json",
-//         },
-//       });
-
-//       // Save message to Firebase
-//       const messagesRef = collection(db, "conversations", to, "messages");
-//       await addDoc(messagesRef, {
-//         text: message,
-//         sender: "agent",
-//         timestamp: Date.now(),
-//         platform: "web",
-//         read: true,
-//       });
-
-//       return Response.json({ success: true, data: response.data });
-//     } catch (error) {
-//       console.error(
-//         "Error sending message:",
-//         error.response?.data || error.message
-//       );
-//       return Response.json({ success: false, error: error.message });
-//     }
-//   } catch (error) {
-//     console.error("Error sending WhatsApp message:", error);
-//     return Response.json(
-//       { success: false, error: error.message },
-//       { status: 500 }
-//     );
-//   }
-// }
 export async function POST(request) {
   try {
-    const { to, message, senderType = "agent" } = await request.json();
+    const { to, message, senderType = "agent", media } = await request.json();
     console.log("[SEND] Sending Message To " + to + " : " + message);
-    if (!to || !message) {
+    if (!to || (!message && !media)) {
       return Response.json(
         { success: false, error: "Missing required fields" },
         { status: 400 }
@@ -67,23 +19,47 @@ export async function POST(request) {
       "EAAQ8GvpD3gYBOyBjBiZBEceqkSAzoXdZBCRQxbREouAnL8DtG8wKwYvONH8pPwD5GLMCcYX24HLyQxkGAEKRQt0aarzh7SIA4xWSrS7CN0FEHwwAeNV6kzfA5UWxOQCdCHCECEF1vccf54LFPCxRo4yWYKZBBrLxP3DMiordKJ0yw3BL83vZAGdC20yeTrViqAZDZD";
 
     const url = `https://graph.facebook.com/v18.0/701862303001191/messages`;
-    const payload = {
-      messaging_product: "whatsapp",
-      recipient_type: "individual",
-      to: to,
-      type: "text",
-      text: { body: message },
-    };
+    let payload;
+    if (media) {
+      payload = {
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: to,
+        type: media.type,
+        [media.type]: {
+          link: media.url,
+          caption: media.caption || "",
+        },
+      };
+    } else {
+      payload = {
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: to,
+        type: "text",
+        text: { body: message },
+      };
+    }
 
     // First save message to Firebase as "sending"
     const messagesRef = collection(db, "conversations", to, "messages");
     const messageRef = await addDoc(messagesRef, {
-      text: message,
       sender: senderType, // Use the parameter here
       timestamp: Date.now(),
       platform: "whatsapp",
       read: false,
       status: "sending",
+      ...(media
+        ? {
+            media: {
+              type: media.type,
+              url: media.url,
+              caption: media.caption,
+            },
+          }
+        : {
+            text: message,
+          }),
     });
 
     // Send message via WhatsApp API
@@ -112,9 +88,10 @@ export async function POST(request) {
         doc(db, "conversations", to),
         {
           lastMessage: {
-            text: message,
+            text: media ? "[Image]" : message,
             timestamp: Date.now(),
             sender: "agent",
+            isSystemMessage: true,
           },
           updatedAt: new Date().toISOString(),
         },

@@ -17,13 +17,22 @@ const openai = new OpenAI({
 
 export async function POST(request) {
   try {
-    const { waId, message, customerName } = await request.json();
+    const { waId, message, customerName, isSystemMessage } =
+      await request.json();
 
     if (!waId || !message) {
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
+    }
+
+    // Skip processing if this is a system-generated message
+    if (isSystemMessage) {
+      return new Response(JSON.stringify({ success: true, skipped: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Check if conversation is in handoff mode
@@ -62,54 +71,86 @@ export async function POST(request) {
       messages: [
         {
           role: "system",
-          content: `أنت وكيل خدمة عملاء لشركة نسائم صلالة للشقق المفروشة في مدينة صلالة بمحافظة ظفار، عمان. مهمتك هي مساعدة العملاء بشكل احترافي وودي، مع التركيز على زيادة الحجوزات وتعزيز ثقة العملاء.
+          content: `أنت مساعد ذكي لشركة "نسائم صلالة" للشقق المفروشة في صلالة، ظفار، عُمان. مهمتك الأساسية هي تحويل الاستفسارات إلى حجوزات مع الحفاظ على تجربة عملاء استثنائية.
 
-1. **الإيجارات**:
-شقق وفيلات مفروشة بخدمات فندقية في المناطق التالية:
-     - عوقد الشمالية : الموقع : الحي التجاري بصلاله  بجانب صلالة مول وكل الخدمات بقالات ومسجد وكفايهات وغيرها 
-يتوفر في عوقد شقق بغرفتين وحمامين ومطبخ وصاله وشققه بغرفه وصاله ومطبخ وحمام ويتوفر شقق ب 3غرف و3 دورات مياه ومطبخ وصاله ويتوفر فيلا 7 غرف و2 مجلس كبير سعه 35 شخص و 7 دورات مياه ومطبخ مع غرفه العامله
-     - الوادي : الموقع مقابل القرية الصينيه والجاردنز مول وبجانب ماكدولنز والمطاعم 
-في الوادي يتوفر شقق بغرفتين وحمامين ومطبخ وصاله وغرفه وصاله ومطبخ وحمام 
+## معلومات أساسية عن الشركة
+- **المناطق المتاحة**: 
+  1. عوقد الشمالية (بجوار صلالة مول، خدمات متكاملة)
+  2. الوادي (مقابل القرية الصينية والجاردنز مول)
+  3. صلالة الوسطى (قرب شاطئ الحافة وسوق الذهب)
+  4. السوق المركزي (وسط الحي التجاري)
+  5. السعادة (بجوار المشهور للتسوق)
+  6. السعادة 2 (مقابل نستو هايبر ماركت)
 
-     - صلالة الوسطى : قريبه من سوق وشاطئ الحافه التاريخي والاثري وقريبه من سوق الذهب بصلاله وبجانب المبنى مسجد وبقالات ومطعم 
-في صلاله الوسطى يتوفر شقق بغرفتين وحمامين ومطبخ وصاله وغرفه وصاله ومطبخ وحمام
+- **الوحدات المتوفرة**:
+  - شقق بغرفة واحدة: صالة + مطبخ + حمام
+  - شقق بغرفتين: صالة + مطبخ + حمامين
+  - شقق بثلاث غرف: صالة + مطبخ + ثلاثة حمامات
+  - فيلا 7 غرف: مجلسين + مطبخ + 7 حمامات + غرفة عاملة
 
-     - السوق المركز بصلاله : الموقع قريبه من مسجد السلطان قابوس وبجانب بنك التنمية و كيه ام مول وسط الحي التجاري بصلالة
-في السوق المركز يتوفر شقق بغرفتين وحمامين ومطبخ وصاله  مع اطلاله بلكونه وغرفه وصاله ومطبخ وحمام وشقه بغرفه ودوره مياه واطلاله بلكونه 
+## سياسات حاسمة
+1. **فترة الخريف (يونيو-سبتمبر)**:
+   - الحجز الشهري غير متاح بتاتاً خلال الخريف
+   - متاح فقط الحجز اليومي خلال هذه الفترة
+   - العروض الشهرية تبدأ بعد نهاية موسم الخريف
 
-     - السعادة : الموقع في الحي التجاري بالسعاده بجانب المشهور للتسوق وكل المطاعم والكافيهات
-في السعادة يتوفر شقق بغرفتين وحمامين ومطبخ وصاله وغرفه وصاله ومطبخ وحمام وشقق ب3 غرف و3 دورات مياه ومطبخ وصاله
+2. **الحجوزات**:
+   - لا تقبل الحجوزات بدون تأكيد الدفع
+   - الحد الأدنى للحجز اليومي: يومين
+   - التأكيد النهائي للحجز يتم بعد استلام الدفع
 
-     - السعادة 2 : مقابل نستو هايبر ماركت وسط حي سكني راقي وهادئ 
-في السعادة 2 يتوفر شقق بغرفتين وحمامين ومطبخ وصاله وغرفه وصاله ومطبخ وحمام
- 
+## أسلوب التواصل
+1. **اللهجة**:
+   - استخدم لهجة عُمانية/خليجية ودودة
+   - ابدأ دائمًا بتحية مناسبة: "السلام عليكم، نسائم صلالة يقدم لكم خدماته" أو "أهلًا وسهلًا، كيف نخدمك اليوم؟"
 
-2. **الخدمات**:
-    - إيجار يومي/شهري مع عروض خاصة لموسم الخريف.
-    - صيانة فورية ودعم 24/7 خلال فترة الإقامة.
-    - توصيات مخصصة لأفضل المناطق حسب احتياجات العميل (سكن عائلات، سياحة، عمل).
+2. **مبادئ الرد**:
+   - الردود قصيرة (1-3 جمل كحد أقصى)
+   - استخدم جمل بسيطة ومباشرة
+   - تجنب التفاصيل الطويلة إلا عند الضرورة
 
-3. **اللهجة والأسلوب**:
-    - تحدث بلهجة عمانية/خليجية واضحة ومريحة (مثل: "أهلاً وسهلاً، كيف ممكن نخدمك؟").
-    - الرد يجب أن يكون مثل الإنسان، بإجابات قصيرة وطبيعية من سطر واحد فقط (تجنب التفاصيل الطويلة).
-    - استخدم جمل قصيرة و مباشرة (تجنب الإطالة).
-    - أضف عبارات تشجيعية مثل:
-       - استفد الان من خصومات الحجز المبكر للخريف 
-      - "احجز الآن واستمتع بخصم 10% على الإيجار الشهري!"
-      - "موسم الخريف قرب، الوحدات المميزة تنفد بسرعة!"
+3. **تحويل الاستفسارات إلى حجوزات**:
+   - عند ذكر الحجز، اسأل بطريقة طبيعية:
+     "أهلاً بك! لمناسبة إقامتك في صلالة، هل تفضل منطقة معينة؟"
+     "حاب نعرف تواريخ إقامتك؟ من متى إلى متى؟"
+     "كم عدد الأشخاص؟ عشان نرشح لك الوحدة المناسبة"
+   - اذكر دائمًا ميزة تنافسية:
+     "حجزك اليوم يضمن لك أفضل سعر قبل ارتفاع الطلب"
+     "الوحدات المميزة تنفذ سريعًا في الخريف"
 
-4. **القيود**:
-    - لا تشارك معلومات خارج نطاق خدمات الشركة أو مدينة صلالة.
-    - لا تذكر أسعارًا تفصيلية إلا إذا كانت متوفرة في قاعدة البيانات.
-    - إذا كان السؤال خارج نطاقك، قدم بيانات التواصل مباشرة:
-      - للأسعار أو الحجوزات، راسلنا على: +968 98590405  
-      أو زور موقعنا: www.nassayem.com  
-5. **التشجيع على الإيجار**:
-   - ركز على المزايا الإيجابية للشركة مثل:
-     - "نسعى لراحتكم مع خدماتنا المتكاملة."
-     - "عروض خاصة لموسم الخريف – احجز مبكراً لضمان الوحدة المناسبة!"
-     - "فريقنا جاهز لمساعدتكم 24/7."
-                    إسم العميل ${customerName || "عميلنا العزيز"}`,
+## قيود صارمة
+1. **لا تقل أبداً**:
+   - "لا أعرف" - بدلاً من ذلك قدم وسائل التواصل
+   - "هذا غير ممكن" - استبدلها بعرض بديل
+   - أسعار دقيقة إلا إذا كانت متوفرة في النظام
+
+2. **نطاق الخدمة**:
+   - لا تذكر أي خدمات خارج صلالة
+   - لا تقارن بمنافسين آخرين
+   - لا تقدم وعوداً غير قابلة للتنفيذ
+
+3. **التعامل مع الأسئلة الصعبة**:
+   - إذا تجاوز السؤال نطاقك:
+     "لهذا الاستفسار الدقيق، تواصل مباشرة مع مدير الحجوزات على الرقم: +968 98590405"
+     "لمزيد من التفاصيل، زور موقعنا: www.nassayem.com"
+
+## توجيهات إضافية
+1. **موسم الخريف**:
+   - ركز على أن الحجوزات اليومية فقط متاحة
+   - ذكر أن العروض الشهرية تبدأ بعد الخريف
+   - شجع على الحجز المبكر: "الوحدات محدودة في الخريف، احجز الآن لتضمن تواريخك المفضلة"
+
+2. **تأكيد المعلومات**:
+   - عند تلقي طلب حجز، كرر المعلومات:
+     "خليني أتأكد: تريد شقة بغرفتين في السعادة من 15 إلى 20 سبتمبر لـ 4 أشخاص، صح؟"
+
+3. **إغلاق المبيعات**:
+   - أنهي المحادثة بدعوة للعمل:
+     "هل تحب تحجز الآن ولا تفضل استشارة أولاً؟"
+     "نحن جاهزين لتأكيد حجزك فورًا"
+
+## معلومات العميل
+العميل: ${customerName || "عميلنا الكريم"}`,
         },
         ...conversationHistory.slice(-6),
         {
@@ -122,48 +163,38 @@ export async function POST(request) {
     });
 
     const aiResponse = response.choices[0]?.message?.content;
+    const cleanedResponse = await handleMediaResponse(waId, aiResponse);
 
-    // Save AI response to conversation
-    // const convRef = doc(db, "conversations", waId);
-    // await setDoc(
-    //   convRef,
-    //   {
-    //     lastMessage: {
-    //       text: aiResponse,
-    //       timestamp: Date.now(),
-    //       sender: "bot",
-    //     },
-    //     status: "active",
-    //     updatedAt: new Date().toISOString(),
-    //   },
-    //   { merge: true }
-    // );
-
-    // // Save AI message
-    // const messagesRef = collection(db, "conversations", waId, "messages");
-    // await addDoc(messagesRef, {
-    //   text: aiResponse,
-    //   sender: "bot",
-    //   timestamp: Date.now(),
-    //   platform: "whatsapp",
-    //   read: false,
-    //   status: "delivered",
-    // });
-
-    // console.log("[OpenAI] Sending Message To " + waId + " : " + aiResponse);
-
-    // Send response via WhatsApp
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        to: waId,
-        message: aiResponse,
-        senderType: "bot", // Add this parameter
-      }),
-    });
+    if (cleanedResponse !== aiResponse) {
+      // Media was sent, no need to send text if empty
+      if (cleanedResponse) {
+        // Send response via WhatsApp
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            to: waId,
+            message: cleanedResponse,
+            senderType: "bot", // Add this parameter
+          }),
+        });
+      }
+    } else {
+      // Send response via WhatsApp
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          to: waId,
+          message: aiResponse,
+          senderType: "bot", // Add this parameter
+        }),
+      });
+    }
 
     return new Response(
       JSON.stringify({ success: true, response: aiResponse }),
@@ -179,4 +210,43 @@ export async function POST(request) {
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
+}
+
+// Add this function to handle media responses
+async function handleMediaResponse(waId, responseText) {
+  const mediaPatterns = {
+    image: /<IMAGE:(.*?)(?:\|(.*?))?>/,
+    location: /<LOCATION:(.*?)(?:\|(.*?))?>/,
+    contact: /<CONTACT:(.*?)>/,
+  };
+
+  const mediaMatches = {
+    image: responseText.match(mediaPatterns.image),
+    location: responseText.match(mediaPatterns.location),
+    contact: responseText.match(mediaPatterns.contact),
+  };
+
+  for (const [type, match] of Object.entries(mediaMatches)) {
+    if (match) {
+      const media = { type };
+      if (type === "image") {
+        media.url = match[1];
+        media.caption = match[2] || "Property Image";
+      }
+      // Handle other media types similarly...
+
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: waId,
+          senderType: "bot",
+          media,
+        }),
+      });
+
+      return responseText.replace(match[0], "").trim();
+    }
+  }
+  return responseText;
 }

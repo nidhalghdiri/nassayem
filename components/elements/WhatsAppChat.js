@@ -1,7 +1,8 @@
 // /components/elements/WhatsAppChat.js
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { db } from "@/lib/firebase";
+import { db, storage } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import {
   collection,
   query,
@@ -19,6 +20,7 @@ import {
   FiX,
   FiCheck,
   FiClock,
+  FiImage,
 } from "react-icons/fi";
 import "/public/css/whatsapp.css";
 
@@ -31,6 +33,7 @@ export default function WhatsAppChat() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [handoff, setHandoff] = useState(false);
   const messagesEndRef = useRef(null);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   // Fetch all conversations sorted by last message timestamp
   useEffect(() => {
@@ -68,20 +71,62 @@ export default function WhatsAppChat() {
       "messages"
     );
     const q = query(messagesRef, orderBy("timestamp", "asc"));
+    let debounceTimer;
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const list = [];
-      snapshot.forEach((doc) => {
-        if (doc.exists()) {
-          list.push({ id: doc.id, ...doc.data() });
-          setHandoff(doc.data().handoff || false);
-        }
-      });
-      setMessages(list);
-      scrollToBottom();
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        const list = [];
+        snapshot.forEach((doc) => {
+          if (doc.exists()) {
+            list.push({ id: doc.id, ...doc.data() });
+            setHandoff(doc.data().handoff || false);
+          }
+        });
+        setMessages(list);
+        scrollToBottom();
+      }, 500);
     });
 
-    return () => unsubscribe();
+    return () => {
+      clearTimeout(debounceTimer);
+      unsubscribe();
+    };
   }, [selectedContact]);
+
+  const handleFileChange = (e) => {
+    if (e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
+  const uploadImage = async () => {
+    if (!selectedFile || !selectedContact) return;
+
+    // Upload to your storage (e.g., Firebase Storage)
+    const storageRef = ref(
+      storage,
+      `properties/${selectedContact}/${selectedFile.name}`
+    );
+    await uploadBytes(storageRef, selectedFile);
+    const downloadURL = await getDownloadURL(storageRef);
+
+    // Send via API
+    await fetch("/api/whatsapp/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        to: selectedContact,
+        senderType: "agent",
+        media: {
+          type: "image",
+          url: downloadURL,
+          caption: "Property Image",
+        },
+      }),
+    });
+
+    setSelectedFile(null);
+  };
 
   const toggleHandoff = async () => {
     try {
@@ -310,7 +355,17 @@ export default function WhatsAppChat() {
                   className={`message ${msg.sender} ${msg.status || ""}`}
                 >
                   <div className="message-content">
-                    <p>{msg.text}</p>
+                    {msg.text && <p>{msg.text}</p>}
+                    {msg.media?.type === "image" && (
+                      <div className="media-container">
+                        <img
+                          src={msg.media.url}
+                          alt={msg.media.caption}
+                          onClick={() => window.open(msg.media.url, "_blank")}
+                        />
+                        {msg.media.caption && <p>{msg.media.caption}</p>}
+                      </div>
+                    )}
                     <div className="message-footer">
                       <span className="time">{formatTime(msg.timestamp)}</span>
                       {msg.sender !== "customer" && (
@@ -335,20 +390,47 @@ export default function WhatsAppChat() {
             </div>
 
             <form onSubmit={sendMessage} className="message-input">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Type a message..."
-                disabled={isSending}
-              />
-              <button type="submit" disabled={isSending || !input.trim()}>
-                {isSending ? (
-                  <div className="spinner"></div>
-                ) : (
-                  <FiSend size={20} />
+              <div className="chat-input">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  style={{ display: "none" }}
+                  id="image-upload"
+                />
+                <label htmlFor="image-upload" className="image-upload-button">
+                  <FiImage size={20} />
+                </label>
+
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Type a message..."
+                  disabled={isSending}
+                />
+
+                <button type="submit" disabled={isSending || !input.trim()}>
+                  {isSending ? (
+                    <div className="spinner"></div>
+                  ) : (
+                    <FiSend size={20} />
+                  )}
+                </button>
+
+                {selectedFile && (
+                  <div className="image-preview">
+                    <img
+                      src={URL.createObjectURL(selectedFile)}
+                      alt="Preview"
+                    />
+                    <button onClick={uploadImage}>Send Image</button>
+                    <button onClick={() => setSelectedFile(null)}>
+                      Cancel
+                    </button>
+                  </div>
                 )}
-              </button>
+              </div>
             </form>
           </>
         ) : (

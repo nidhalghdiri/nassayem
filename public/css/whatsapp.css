@@ -423,3 +423,45 @@ input:checked + .slider:before {
 .message.failed .time {
   color: #ff3b30;
 }
+/* Image upload button */
+.image-upload-button {
+  padding: 10px;
+  cursor: pointer;
+  color: #666;
+}
+
+.image-upload-button:hover {
+  color: #000;
+}
+
+/* Image preview */
+.image-preview {
+  position: absolute;
+  bottom: 60px;
+  left: 10px;
+  background: white;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.image-preview img {
+  max-width: 200px;
+  max-height: 200px;
+  margin-bottom: 10px;
+}
+
+/* Media in chat */
+.media-container img {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 5px;
+}
+
+.media-container p {
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 5px;
+}
