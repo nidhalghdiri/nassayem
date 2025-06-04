@@ -10,6 +10,7 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { propertyImages } from "@/lib/propertyImages";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -79,7 +80,17 @@ export async function POST(request) {
   2. الوادي (مقابل القرية الصينية والجاردنز مول)
   3. صلالة الوسطى (قرب شاطئ الحافة وسوق الذهب)
   4. السوق المركزي (وسط الحي التجاري)
+    - Images:
+      - /images/properties/sadaa/bedroom.jpg
+      - /images/properties/sadaa/living_room.jpg
+      - /images/properties/sadaa/living_room_2.jpg
+      - /images/properties/sadaa/room.jpg
+      - /images/properties/sadaa/kitchen.jpg
   5. السعادة (بجوار المشهور للتسوق)
+    - Images:
+      - /images/properties/hay_tijari/bedroom.jpg
+      - /images/properties/hay_tijari/living_room_1.jpg
+      - /images/properties/hay_tijari/living_room_2.jpg
   6. السعادة 2 (مقابل نستو هايبر ماركت)
 
 - **الوحدات المتوفرة**:
@@ -214,39 +225,30 @@ export async function POST(request) {
 
 // Add this function to handle media responses
 async function handleMediaResponse(waId, responseText) {
-  const mediaPatterns = {
-    image: /<IMAGE:(.*?)(?:\|(.*?))?>/,
-    location: /<LOCATION:(.*?)(?:\|(.*?))?>/,
-    contact: /<CONTACT:(.*?)>/,
-  };
+  const imageRegex = /<IMAGE:([^>]+)>/;
+  const match = responseText.match(imageRegex);
 
-  const mediaMatches = {
-    image: responseText.match(mediaPatterns.image),
-    location: responseText.match(mediaPatterns.location),
-    contact: responseText.match(mediaPatterns.contact),
-  };
+  if (match) {
+    const propertyId = match[1];
+    const images = propertyImages[propertyId] || [];
 
-  for (const [type, match] of Object.entries(mediaMatches)) {
-    if (match) {
-      const media = { type };
-      if (type === "image") {
-        media.url = match[1];
-        media.caption = match[2] || "Property Image";
-      }
-      // Handle other media types similarly...
-
+    for (const imageUrl of images) {
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           to: waId,
           senderType: "bot",
-          media,
+          media: {
+            type: "image",
+            url: `${process.env.NEXT_PUBLIC_BASE_URL}${imageUrl}`,
+            caption: `Property ${propertyId}`,
+          },
         }),
       });
-
-      return responseText.replace(match[0], "").trim();
     }
+
+    return responseText.replace(match[0], "").trim();
   }
   return responseText;
 }

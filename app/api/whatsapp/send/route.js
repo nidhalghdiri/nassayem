@@ -6,7 +6,9 @@ import { db } from "@/lib/firebase";
 export async function POST(request) {
   try {
     const { to, message, senderType = "agent", media } = await request.json();
-    console.log("[SEND] Sending Message To " + to + " : " + message);
+    console.log(
+      "[SEND] Sending Message To " + to + " : " + (message || "[Media]")
+    );
     if (!to || (!message && !media)) {
       return Response.json(
         { success: false, error: "Missing required fields" },
@@ -19,6 +21,12 @@ export async function POST(request) {
       "EAAQ8GvpD3gYBOyBjBiZBEceqkSAzoXdZBCRQxbREouAnL8DtG8wKwYvONH8pPwD5GLMCcYX24HLyQxkGAEKRQt0aarzh7SIA4xWSrS7CN0FEHwwAeNV6kzfA5UWxOQCdCHCECEF1vccf54LFPCxRo4yWYKZBBrLxP3DMiordKJ0yw3BL83vZAGdC20yeTrViqAZDZD";
 
     const url = `https://graph.facebook.com/v18.0/701862303001191/messages`;
+
+    // Handle local image paths (if URL starts with /)
+    const mediaUrl = media?.url?.startsWith("/")
+      ? `${process.env.NEXT_PUBLIC_BASE_URL}${media.url}`
+      : media?.url;
+
     let payload;
     if (media) {
       payload = {
@@ -27,7 +35,7 @@ export async function POST(request) {
         to: to,
         type: media.type,
         [media.type]: {
-          link: media.url,
+          link: mediaUrl,
           caption: media.caption || "",
         },
       };
@@ -79,7 +87,11 @@ export async function POST(request) {
       // Update message status to "sent"
       await setDoc(
         doc(db, "conversations", to, "messages", messageRef.id),
-        { status: "sent", whatsappMessageId: result.messages?.[0]?.id },
+        {
+          status: "sent",
+          whatsappMessageId: result.messages?.[0]?.id,
+          ...(media ? { media: { ...media, url: mediaUrl } } : {}),
+        },
         { merge: true }
       );
 
@@ -88,7 +100,7 @@ export async function POST(request) {
         doc(db, "conversations", to),
         {
           lastMessage: {
-            text: media ? "[Image]" : message,
+            text: media ? "[Media]" : message,
             timestamp: Date.now(),
             sender: "agent",
             isSystemMessage: true,
