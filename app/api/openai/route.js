@@ -64,9 +64,10 @@ export async function POST(request) {
       const msg = doc.data();
       conversationHistory.push({
         role: msg.sender === "customer" ? "user" : "assistant",
-        content: msg.text,
+        content: msg.text.toString().trim() || "(empty message)",
       });
     });
+    const sanitizedMessage = message?.toString().trim() || "(empty message)";
 
     // Generate AI response
     const response = await openai.chat.completions.create({
@@ -74,7 +75,8 @@ export async function POST(request) {
       messages: [
         {
           role: "system",
-          content: `أنت مساعد ذكي لشركة "نسائم صلالة" للشقق المفروشة في صلالة، ظفار، عُمان. مهمتك الأساسية هي تحويل الاستفسارات إلى حجوزات مع الحفاظ على تجربة عملاء استثنائية.
+          content:
+            `أنت مساعد ذكي لشركة "نسائم صلالة" للشقق المفروشة في صلالة، ظفار، عُمان. مهمتك الأساسية هي تحويل الاستفسارات إلى حجوزات مع الحفاظ على تجربة عملاء استثنائية.
 
 ## معلومات أساسية عن الشركة
 - **المناطق المتاحة**: 
@@ -200,19 +202,25 @@ export async function POST(request) {
      "نحن جاهزين لتأكيد حجزك فورًا"
 
 ## معلومات العميل
-العميل: ${customerName || "عميلنا الكريم"}`,
+العميل: ${customerName || "عميلنا الكريم"}`.trim(),
         },
-        ...conversationHistory.slice(-6),
+        ...conversationHistory.slice(-6).filter((msg) => msg.content),
         {
           role: "user",
-          content: message,
+          content: sanitizedMessage,
         },
-      ],
+      ].filter((msg) => msg.content),
       temperature: 0.7,
       max_tokens: 500,
     });
 
     const aiResponse = response.choices[0]?.message?.content;
+    if (!aiResponse) {
+      console.error("Empty response from OpenAI", { response });
+      return new Response(JSON.stringify({ error: "Empty response from AI" }), {
+        status: 500,
+      });
+    }
     const cleanedResponse = await handleMediaResponse(waId, aiResponse);
 
     if (cleanedResponse !== aiResponse) {
@@ -251,11 +259,26 @@ export async function POST(request) {
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("OpenAI API error:", error);
+    console.error("OpenAI API error details:", {
+      message: error.message,
+      status: error.status,
+      response: error.response?.data,
+      stack: error.stack,
+    });
+
     return new Response(
       JSON.stringify({
         error: "Error processing request",
         details: error.message,
+        requestData: {
+          // For debugging
+          waId,
+          message: sanitizedMessage,
+          conversationHistory: conversationHistory.map((m) => ({
+            role: m.role,
+            content: m.content?.length || 0,
+          })),
+        },
       }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
