@@ -92,7 +92,7 @@ export async function POST(request) {
       - /images/properties/hay_tijari/living_room_1.jpg
       - /images/properties/hay_tijari/living_room_2.jpg
   6. السعادة 2 (مقابل نستو هايبر ماركت)
-
+- عند إرسال الصور، استخدم صيغة ماركداون: ![وصف](مسار_الصورة)
 - **الوحدات المتوفرة**:
   - شقق بغرفة واحدة: صالة + مطبخ + حمام
   - شقق بغرفتين: صالة + مطبخ + حمامين
@@ -224,31 +224,37 @@ export async function POST(request) {
 }
 
 // Add this function to handle media responses
+const imageRegex = /!\[[^\]]*\]\(([^)]+)\)/g; // Match Markdown images
+
 async function handleMediaResponse(waId, responseText) {
-  const imageRegex = /<IMAGE:([^>]+)>/;
-  const match = responseText.match(imageRegex);
+  let cleanedText = responseText;
+  const matches = [...responseText.matchAll(imageRegex)];
 
-  if (match) {
-    const propertyId = match[1];
-    const images = propertyImages[propertyId] || [];
+  for (const [index, match] of matches.entries()) {
+    const imagePath = match[1];
+    const absoluteUrl = `${process.env.NEXT_PUBLIC_BASE_URL}${imagePath}`;
 
-    for (const imageUrl of images) {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to: waId,
-          senderType: "bot",
-          media: {
-            type: "image",
-            url: `${process.env.NEXT_PUBLIC_BASE_URL}${imageUrl}`,
-            caption: `Property ${propertyId}`,
-          },
-        }),
-      });
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        to: waId,
+        senderType: "bot",
+        media: {
+          type: "image",
+          url: absoluteUrl,
+          caption: "Property Image",
+        },
+      }),
+    });
+
+    cleanedText = cleanedText.replace(match[0], "").trim();
+
+    // Add 1s delay between images
+    if (index < matches.length - 1) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-
-    return responseText.replace(match[0], "").trim();
   }
-  return responseText;
+
+  return cleanedText;
 }

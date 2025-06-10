@@ -9,6 +9,10 @@ export async function POST(request) {
     console.log(
       "[SEND] Sending Message To " + to + " : " + (message || "[Media]")
     );
+    console.log(
+      "[SEND] Sending Media Message To " + to + " : " + "[Media] : " + media
+    );
+
     if (!to || (!message && !media)) {
       return Response.json(
         { success: false, error: "Missing required fields" },
@@ -23,9 +27,10 @@ export async function POST(request) {
     const url = `https://graph.facebook.com/v18.0/701862303001191/messages`;
 
     // Handle local image paths (if URL starts with /)
-    const mediaUrl = media?.url?.startsWith("/")
-      ? `${process.env.NEXT_PUBLIC_BASE_URL}${media.url}`
-      : media?.url;
+    let mediaUrl = media?.url;
+    if (mediaUrl) {
+      mediaUrl = getAbsoluteUrl(mediaUrl); // Convert to absolute URL
+    }
 
     let payload;
     if (media) {
@@ -132,3 +137,7 @@ export async function POST(request) {
     );
   }
 }
+const getAbsoluteUrl = (path) => {
+  if (path.startsWith("http")) return path;
+  return `${process.env.NEXT_PUBLIC_BASE_URL}${path}`;
+};
