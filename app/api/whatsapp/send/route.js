@@ -70,7 +70,7 @@ export async function POST(request) {
             messaging_product: "whatsapp",
             recipient_type: "individual",
             to: to,
-            type: "contact",
+            type: "contacts",
             contacts: [
               {
                 name: {
