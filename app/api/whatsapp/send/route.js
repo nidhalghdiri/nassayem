@@ -34,16 +34,63 @@ export async function POST(request) {
 
     let payload;
     if (media) {
-      payload = {
-        messaging_product: "whatsapp",
-        recipient_type: "individual",
-        to: to,
-        type: media.type,
-        [media.type]: {
-          link: mediaUrl,
-          caption: media.caption || "",
-        },
-      };
+      switch (media.type) {
+        case "image":
+          payload = {
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            to: to,
+            type: "image",
+            image: {
+              link: mediaUrl,
+              caption: media.caption || "",
+            },
+          };
+          break;
+
+        case "location":
+          payload = {
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            to: to,
+            type: "location",
+            location: {
+              latitude: media.latitude,
+              longitude: media.longitude,
+              name: media.name || "Property Location",
+              address: media.address || "",
+            },
+          };
+          break;
+
+        case "contact":
+          payload = {
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            to: to,
+            type: "contact",
+            contacts: [
+              {
+                name: {
+                  formatted_name: media.contact.name,
+                },
+                phones: [
+                  {
+                    phone: media.contact.phone,
+                    type: "WORK",
+                  },
+                ],
+              },
+            ],
+          };
+          break;
+
+        default:
+          return Response.json(
+            { success: false, error: "Unsupported media type" },
+            { status: 400 }
+          );
+      }
     } else {
       payload = {
         messaging_product: "whatsapp",
@@ -66,13 +113,26 @@ export async function POST(request) {
         ? {
             media: {
               type: media.type,
-              url: media.url,
-              caption: media.caption,
+              ...(media.type === "image"
+                ? { url: media.url, caption: media.caption }
+                : media.type === "location"
+                ? {
+                    latitude: media.latitude,
+                    longitude: media.longitude,
+                    name: media.name,
+                    address: media.address,
+                  }
+                : media.type === "contact"
+                ? {
+                    contact: {
+                      name: media.contact.name,
+                      phone: media.contact.phone,
+                    },
+                  }
+                : {}),
             },
           }
-        : {
-            text: message,
-          }),
+        : { text: message }),
     });
 
     // Send message via WhatsApp API

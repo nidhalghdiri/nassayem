@@ -11,6 +11,8 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { propertyImages } from "@/lib/propertyImages";
+import { getCaptionFromPath } from "@/lib/imageUtils";
+import { buildingInfo } from "@/lib/BuildingData";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -77,22 +79,54 @@ export async function POST(request) {
 ## معلومات أساسية عن الشركة
 - **المناطق المتاحة**: 
   1. عوقد الشمالية (بجوار صلالة مول، خدمات متكاملة)
+    - المعرف: "awqad_north"
+    - جهات الاتصال:
+      - مركز الاتصال: +968 1234 5678
+      - الاستقبال: +968 2345 6789
   2. الوادي (مقابل القرية الصينية والجاردنز مول)
+    - المعرف: "alwadi"
   3. صلالة الوسطى (قرب شاطئ الحافة وسوق الذهب)
+    - المعرف: "salalah_central"
   4. السوق المركزي (وسط الحي التجاري)
-    - Images:
-      - /images/properties/sadaa/bedroom.jpg
-      - /images/properties/sadaa/living_room.jpg
-      - /images/properties/sadaa/living_room_2.jpg
-      - /images/properties/sadaa/room.jpg
-      - /images/properties/sadaa/kitchen.jpg
+    - المعرف: "central_market"
+    - الصور:
+      - ![غرفة نوم](/images/properties/hay_tijari/bedroom.jpg)
+      - ![صالة رئيسية](/images/properties/hay_tijari/living_room_1.jpg)
+      - ![صالة ثانوية](/images/properties/hay_tijari/living_room_2.jpg)
   5. السعادة (بجوار المشهور للتسوق)
-    - Images:
-      - /images/properties/hay_tijari/bedroom.jpg
-      - /images/properties/hay_tijari/living_room_1.jpg
-      - /images/properties/hay_tijari/living_room_2.jpg
+    - المعرف: "saada"
+    - الصور:
+      - ![غرفة نوم](/images/properties/sadaa/bedroom.jpg)
+      - ![صالة](/images/properties/sadaa/living_room.jpg)
+      - ![مطبخ](/images/properties/sadaa/kitchen.jpg)
   6. السعادة 2 (مقابل نستو هايبر ماركت)
-- عند إرسال الصور، استخدم صيغة ماركداون: ![وصف](مسار_الصورة)
+    - المعرف: "saada_2"
+## كيفية إرسال المحتوى المتقدم
+1. **الصور**:
+   - استخدم صيغة: ![وصف الصورة](مسار الصورة)
+   - مثال: ![غرفة نوم](/images/properties/sadaa/bedroom.jpg)
+
+2. **المواقع الجغرافية**:
+   - استخدم الصيغة: <LOCATION:معرف_المبنى>
+   - مثال: "الموقع: <LOCATION:saada>"
+
+3. **جهات الاتصال**:
+   - استخدم الصيغة: <CONTACT:معرف_المبنى:نوع_الاتصال>
+   - الأنواع المتاحة: call_center أو receptionist
+   - مثال: "الاتصال: <CONTACT:awqad_north:receptionist>"
+
+## سياسات إرسال المحتوى
+1. عند طلب العميل رؤية الصور:
+   - أرسل 3 صور مميزة للمنطقة المطلوبة
+   - استخدم أوصافاً واضحة مثل "غرفة نوم رئيسية" أو "مطبخ حديث"
+
+2. عند طلب الموقع:
+   - أرسل الموقع فوراً مع جملة توضيحية
+   - مثال: "هذا موقعنا في السعادة: <LOCATION:saada>"
+
+3. عند طلب الاتصال:
+   - حدد نوع الاتصال المطلوب (استقبال/مركز اتصال)
+   - مثال: "يمكنك الاتصال بالاستقبال: <CONTACT:saada:receptionist>"
 - **الوحدات المتوفرة**:
   - شقق بغرفة واحدة: صالة + مطبخ + حمام
   - شقق بغرفتين: صالة + مطبخ + حمامين
@@ -140,7 +174,12 @@ export async function POST(request) {
    - لا تقارن بمنافسين آخرين
    - لا تقدم وعوداً غير قابلة للتنفيذ
 
-3. **التعامل مع الأسئلة الصعبة**:
+3. **التعامل مع الوسائط**:
+   - لا ترسل أكثر من 3 صور في رد واحد
+   - تأكد من أن المطلوب يحتاج فعلاً لوسائط قبل الإرسال
+   - لا ترسل وسائط للأسئلة العامة
+
+4. **التعامل مع الأسئلة الصعبة**:
    - إذا تجاوز السؤال نطاقك:
      "لهذا الاستفسار الدقيق، تواصل مباشرة مع مدير الحجوزات على الرقم: +968 98590405"
      "لمزيد من التفاصيل، زور موقعنا: www.nassayem.com"
@@ -227,12 +266,13 @@ export async function POST(request) {
 const imageRegex = /!\[[^\]]*\]\(([^)]+)\)/g; // Match Markdown images
 
 async function handleMediaResponse(waId, responseText) {
-  let cleanedText = responseText;
   const matches = [...responseText.matchAll(imageRegex)];
+  let cleanedText = responseText;
 
   for (const [index, match] of matches.entries()) {
     const imagePath = match[1];
     const absoluteUrl = `${process.env.NEXT_PUBLIC_BASE_URL}${imagePath}`;
+    const caption = getCaptionFromPath(imagePath);
 
     await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
       method: "POST",
@@ -243,7 +283,7 @@ async function handleMediaResponse(waId, responseText) {
         media: {
           type: "image",
           url: absoluteUrl,
-          caption: "Property Image",
+          caption: caption,
         },
       }),
     });
@@ -254,6 +294,65 @@ async function handleMediaResponse(waId, responseText) {
     if (index < matches.length - 1) {
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
+  }
+
+  // Handle location requests
+  const locationRegex = /<LOCATION:([^>]+)>/g;
+  const locationMatches = [...responseText.matchAll(locationRegex)];
+
+  for (const match of locationMatches) {
+    const buildingId = match[1];
+    const building = buildingInfo[buildingId];
+
+    if (building) {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: waId,
+          senderType: "bot",
+          media: {
+            type: "location",
+            latitude: building.location.latitude,
+            longitude: building.location.longitude,
+            name: building.name,
+            address: building.location.address,
+          },
+        }),
+      });
+    }
+
+    cleanedText = cleanedText.replace(match[0], "").trim();
+  }
+
+  // Handle contact requests
+  const contactRegex = /<CONTACT:([^:]+):(\w+)>/g;
+  const contactMatches = [...responseText.matchAll(contactRegex)];
+
+  for (const match of contactMatches) {
+    const [fullMatch, buildingId, contactType] = match;
+    const building = buildingInfo[buildingId];
+
+    if (building && building.contacts[contactType]) {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: waId,
+          senderType: "bot",
+          media: {
+            type: "contact",
+            contact: {
+              name:
+                contactType === "call_center" ? "Call Center" : "Receptionist",
+              phone: building.contacts[contactType],
+            },
+          },
+        }),
+      });
+    }
+
+    cleanedText = cleanedText.replace(fullMatch, "").trim();
   }
 
   return cleanedText;
