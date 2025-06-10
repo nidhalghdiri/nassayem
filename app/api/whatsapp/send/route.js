@@ -49,6 +49,7 @@ export async function POST(request) {
           break;
 
         case "location":
+          console.log("MEdia Type Location ", media);
           payload = {
             messaging_product: "whatsapp",
             recipient_type: "individual",
@@ -64,6 +65,7 @@ export async function POST(request) {
           break;
 
         case "contact":
+          console.log("MEdia Type Contact ", media);
           payload = {
             messaging_product: "whatsapp",
             recipient_type: "individual",

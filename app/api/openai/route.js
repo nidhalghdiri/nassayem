@@ -82,7 +82,7 @@ export async function POST(request) {
       });
     });
 
-    console.log("[OPENAI] conversationHistory: ", conversationHistory);
+    // console.log("[OPENAI] conversationHistory: ", conversationHistory);
 
     // Generate AI response
     const response = await openai.chat.completions.create({
@@ -346,10 +346,12 @@ async function handleMediaResponse(waId, responseText) {
   // Handle location requests
   const locationRegex = /<LOCATION:([^>]+)>/g;
   const locationMatches = [...responseText.matchAll(locationRegex)];
+  console.log("Matched Locations => ", locationMatches);
 
   for (const match of locationMatches) {
     const buildingId = match[1];
     const building = buildingInfo[buildingId];
+    console.log("Matched Locations buildingInfo => ", building);
 
     if (building) {
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
@@ -360,12 +362,19 @@ async function handleMediaResponse(waId, responseText) {
           senderType: "bot",
           media: {
             type: "location",
-            latitude: building.location.latitude,
-            longitude: building.location.longitude,
+            latitude: Number(building.location.latitude),
+            longitude: Number(building.location.longitude),
             name: building.name,
-            address: building.location.address,
+            address: building.location.address || "Location Address",
           },
         }),
+      });
+    } else {
+      console.error(`Missing location data for building: ${buildingId}`, {
+        hasBuilding: !!building,
+        hasLocation: building?.location,
+        lat: building?.location?.latitude,
+        lng: building?.location?.longitude,
       });
     }
 
