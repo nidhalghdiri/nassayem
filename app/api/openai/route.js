@@ -20,8 +20,22 @@ const openai = new OpenAI({
 
 export async function POST(request) {
   try {
-    const { waId, message, customerName, isSystemMessage } =
-      await request.json();
+    let waId, message, customerName, isSystemMessage;
+
+    // const { waId, message, customerName, isSystemMessage } =
+    //   await request.json();
+    const body = await request.json();
+    ({ waId, message, customerName, isSystemMessage } = body);
+
+    console.log("[OPENAI] Body: ", {
+      waId,
+      message,
+      customerName,
+      isSystemMessage,
+    });
+
+    const sanitizedMessage = message?.toString().trim() || "(empty message)";
+    console.log("[OPENAI] sanitizedMessage: ", sanitizedMessage);
 
     if (!waId || !message) {
       return new Response(
@@ -64,10 +78,11 @@ export async function POST(request) {
       const msg = doc.data();
       conversationHistory.push({
         role: msg.sender === "customer" ? "user" : "assistant",
-        content: msg.text.toString().trim() || "(empty message)",
+        content: msg.text?.toString().trim() || "(empty message)",
       });
     });
-    const sanitizedMessage = message?.toString().trim() || "(empty message)";
+
+    console.log("[OPENAI] conversationHistory: ", conversationHistory);
 
     // Generate AI response
     const response = await openai.chat.completions.create({
@@ -215,6 +230,8 @@ export async function POST(request) {
     });
 
     const aiResponse = response.choices[0]?.message?.content;
+    console.log("[OPENAI] aiResponse: ", aiResponse);
+
     if (!aiResponse) {
       console.error("Empty response from OpenAI", { response });
       return new Response(JSON.stringify({ error: "Empty response from AI" }), {
@@ -222,6 +239,7 @@ export async function POST(request) {
       });
     }
     const cleanedResponse = await handleMediaResponse(waId, aiResponse);
+    console.log("[OPENAI] cleanedResponse: ", cleanedResponse);
 
     if (cleanedResponse !== aiResponse) {
       // Media was sent, no need to send text if empty
@@ -264,6 +282,10 @@ export async function POST(request) {
       status: error.status,
       response: error.response?.data,
       stack: error.stack,
+      // Safely handle variables that might not exist
+      waId: waId || "undefined",
+      message: message || "undefined",
+      sanitizedMessage: message?.toString().trim() || "undefined",
     });
 
     return new Response(
@@ -272,8 +294,10 @@ export async function POST(request) {
         details: error.message,
         requestData: {
           // For debugging
-          waId,
+          waId: waId || "n/a",
           message: sanitizedMessage,
+          message: message || "n/a",
+          sanitizedMessage: message?.toString().trim() || "n/a",
           conversationHistory: conversationHistory.map((m) => ({
             role: m.role,
             content: m.content?.length || 0,
