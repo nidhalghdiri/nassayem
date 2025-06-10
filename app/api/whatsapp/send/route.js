@@ -82,6 +82,29 @@ export async function POST(request) {
                     type: "WORK",
                   },
                 ],
+                addresses: [
+                  {
+                    street: "شارع اللبان بجانب صلالة مول",
+                    city: "صلالة",
+                    state: "ظفار",
+                    zip: "211",
+                    country: "عمان",
+                    country_code: "OM",
+                    type: "WORK",
+                  },
+                ],
+                emails: [
+                  {
+                    email: "ghdiri.nidhal@gmail.com",
+                    type: "WORK",
+                  },
+                ],
+                urls: [
+                  {
+                    url: "https://nassayem.com",
+                    type: "WORK",
+                  },
+                ],
               },
             ],
           };

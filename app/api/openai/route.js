@@ -111,13 +111,13 @@ export async function POST(request) {
       - ![صالة رئيسية](/images/properties/hay_tijari/living_room_1.jpg)
       - ![صالة ثانوية](/images/properties/hay_tijari/living_room_2.jpg)
   5. السعادة (بجوار المشهور للتسوق)
-    - المعرف: "saada"
+    - المعرف: "sadaa"
     - الصور:
       - ![غرفة نوم](/images/properties/sadaa/bedroom.jpg)
       - ![صالة](/images/properties/sadaa/living_room.jpg)
       - ![مطبخ](/images/properties/sadaa/kitchen.jpg)
   6. السعادة 2 (مقابل نستو هايبر ماركت)
-    - المعرف: "saada_2"
+    - المعرف: "sadaa_2"
 ## كيفية إرسال المحتوى المتقدم
 1. **الصور**:
    - استخدم صيغة: ![وصف الصورة](مسار الصورة)
