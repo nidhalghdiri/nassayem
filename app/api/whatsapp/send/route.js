@@ -75,10 +75,16 @@ export async function POST(request) {
               {
                 name: {
                   formatted_name: media.contact.name,
+                  first_name: "نضال",
+                  last_name: "غديري",
+                  middle_name: "بن علي",
+                  suffix: "NG",
+                  prefix: "GN",
                 },
                 phones: [
                   {
                     phone: media.contact.phone,
+                    wa_id: media.contact.phone,
                     type: "WORK",
                   },
                 ],
