@@ -170,8 +170,46 @@ export async function POST(request) {
                 : media.type === "contact"
                 ? {
                     contact: {
-                      name: media.contact.name,
-                      phone: media.contact.phone,
+                      name: {
+                        formatted_name:
+                          media.contact.name?.formatted_name ||
+                          (media.contact_type === "call_center"
+                            ? "Call Center"
+                            : "Receptionist"),
+                        first_name: media.contact.name?.first_name || "",
+                        last_name: media.contact.name?.last_name || "",
+                      },
+                      phones: [
+                        {
+                          phone: media.contact.phones?.[0]?.phone || "",
+                          wa_id: media.contact.phones?.[0]?.phone || "",
+                          type: "WORK",
+                        },
+                      ],
+                      addresses: [
+                        {
+                          street: media.contact.addresses?.[0]?.street || "",
+                          city: media.contact.addresses?.[0]?.city || "",
+                          state: media.contact.addresses?.[0]?.state || "",
+                          zip: media.contact.addresses?.[0]?.zip || "",
+                          country: media.contact.addresses?.[0]?.country || "",
+                          country_code:
+                            media.contact.addresses?.[0]?.country_code || "",
+                          type: media.contact.addresses?.[0]?.type || "",
+                        },
+                      ],
+                      emails: [
+                        {
+                          email: media.contact.emails?.[0]?.email || "",
+                          type: media.contact.emails?.[0]?.type || "",
+                        },
+                      ],
+                      urls: [
+                        {
+                          url: media.contact.urls?.[0]?.url || "",
+                          type: media.contact.urls?.[0]?.type || "",
+                        },
+                      ],
                     },
                   }
                 : {}),

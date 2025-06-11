@@ -308,9 +308,17 @@ async function handleMediaResponse(waId, responseText) {
   // const imageRegex = /!\[[^\]]*\]\(([^)]+)\)/g; // Match Markdown images
   const galleryRegex = /<GALLERY:([^>]+)>/g;
   const galleryMatches = [...cleanedText.matchAll(galleryRegex)];
+  const processedBuildings = new Set(); // To track processed buildings
 
   for (const match of galleryMatches) {
     const buildingId = match[1];
+    // Skip if already processed
+    if (processedBuildings.has(buildingId)) {
+      cleanedText = cleanedText.replace(match[0], "").trim();
+      continue;
+    }
+    processedBuildings.add(buildingId); // Mark as processed
+
     const building = buildingInfo[buildingId];
     if (!building || !building.media || !building.media.gallery) {
       console.error(
