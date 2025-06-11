@@ -95,33 +95,25 @@ export async function POST(request) {
 
 ## معلومات أساسية عن الشركة
 - **المناطق المتاحة**: 
-  1. عوقد الشمالية (بجوار صلالة مول، خدمات متكاملة)
+  1. بناية عوقد الشمالية (بجوار صلالة مول)
     - المعرف: "awqad_north"
-    - جهات الاتصال:
-      - مركز الاتصال: +968 1234 5678
-      - الاستقبال: +968 2345 6789
-  2. الوادي (مقابل القرية الصينية والجاردنز مول)
+    - الوصف: تقع بناية عوقد الشمالية في موقع استراتيجي بجانب صلالة مول، وتوفر إطلالة خلابة على المدينة مع سهولة الوصول إلى المطاعم، المقاهي، والمراكز التجارية الكبرى مثل لولو هايبرماركت. تُعتبر وجهة مثالية للإقامة القصيرة والطويلة في صلالة.
+  2. بناية الوادي (مقابل القرية الصينية والجاردنز مول)
     - المعرف: "alwadi"
-  3. صلالة الوسطى (قرب شاطئ الحافة وسوق الذهب)
+    - الوصف: موجودة في شارع مرباط وسط المدينة مقابل القرية الصينية والجاردنز مول، قريبة من المطاعم والكافيهات وكل المحالات التجارية مثل لولو هايبرماركت وماكدونالدز. موقع استراتيجي يوفر لك سهولة الوصول إلى أماكن التسوق والمطاعم الشهيرة في صلالة.
+  3. بناية صلالة الوسطى (قرب شاطئ الحافة وسوق الذهب)
     - المعرف: "salalah_central"
+    - الوصف: تقع بناية صلالة الوسطى في قلب المدينة، بالقرب من شاطئ الحافة الخلاب وسوق الذهب الشهير. تُعتبر وجهة مثالية للباحثين عن الإقامة الفاخرة مع سهولة الوصول إلى أماكن الجذب السياحي والتجارية مثل المطاعم الراقية، المقاهي العصرية، والمراكز التجارية الكبرى.
   4. السوق المركزي (وسط الحي التجاري)
-    - المعرف: "central_market"
-    - الصور:
-      - ![غرفة نوم](/images/properties/hay_tijari/bedroom.jpg)
-      - ![صالة رئيسية](/images/properties/hay_tijari/living_room_1.jpg)
-      - ![صالة ثانوية](/images/properties/hay_tijari/living_room_2.jpg)
+    - المعرف: "hay_tijari"
   5. السعادة (بجوار المشهور للتسوق)
     - المعرف: "sadaa"
-    - الصور:
-      - ![غرفة نوم](/images/properties/sadaa/bedroom.jpg)
-      - ![صالة](/images/properties/sadaa/living_room.jpg)
-      - ![مطبخ](/images/properties/sadaa/kitchen.jpg)
   6. السعادة 2 (مقابل نستو هايبر ماركت)
     - المعرف: "sadaa_2"
 ## كيفية إرسال المحتوى المتقدم
 1. **الصور**:
-   - استخدم صيغة: ![وصف الصورة](مسار الصورة)
-   - مثال: ![غرفة نوم](/images/properties/sadaa/bedroom.jpg)
+  - استخدم الصيغة: <GALLERY:معرف_المبنى>
+  - مثال: "ها هي صور بناية الوادي: <GALLERY:alwadi>"
 
 2. **المواقع الجغرافية**:
    - استخدم الصيغة: <LOCATION:معرف_المبنى>
@@ -310,38 +302,111 @@ export async function POST(request) {
 }
 
 // Add this function to handle media responses
-const imageRegex = /!\[[^\]]*\]\(([^)]+)\)/g; // Match Markdown images
 
 async function handleMediaResponse(waId, responseText) {
-  const matches = [...responseText.matchAll(imageRegex)];
   let cleanedText = responseText;
+  // const imageRegex = /!\[[^\]]*\]\(([^)]+)\)/g; // Match Markdown images
+  const galleryRegex = /<GALLERY:([^>]+)>/g;
+  const galleryMatches = [...cleanedText.matchAll(galleryRegex)];
 
-  for (const [index, match] of matches.entries()) {
-    const imagePath = match[1];
-    const absoluteUrl = `${process.env.NEXT_PUBLIC_BASE_URL}${imagePath}`;
-    const caption = getCaptionFromPath(imagePath);
-
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        to: waId,
-        senderType: "bot",
-        media: {
-          type: "image",
-          url: absoluteUrl,
-          caption: caption,
-        },
-      }),
-    });
-
-    cleanedText = cleanedText.replace(match[0], "").trim();
-
-    // Add 1s delay between images
-    if (index < matches.length - 1) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+  for (const match of galleryMatches) {
+    const buildingId = match[1];
+    const building = buildingInfo[buildingId];
+    if (!building || !building.media || !building.media.gallery) {
+      console.error(
+        `Invalid or missing gallery data for building: ${buildingId}`
+      );
+      cleanedText = cleanedText.replace(match[0], "").trim();
+      continue;
     }
+    // Send video first
+    if (building.media.video) {
+      const videoUrl = `${process.env.NEXT_PUBLIC_BASE_URL}${building.media.video.url}`;
+
+      if (building) {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: waId,
+            senderType: "bot",
+            media: {
+              type: "video",
+              url: videoUrl,
+              caption: building.media.video.caption,
+            },
+          }),
+        });
+      } else {
+        console.error(`Missing Image data for building: ${buildingId}`, {
+          hasBuilding: !!building,
+          hasLocation: building?.media,
+        });
+      }
+      await delay(1000); // Optional delay between video and images
+    }
+    // Send gallery images
+    for (const [index, image] of building.media.gallery.entries()) {
+      const imageUrl = `${process.env.NEXT_PUBLIC_BASE_URL}${image.url}`;
+
+      if (building) {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: waId,
+            senderType: "bot",
+            media: {
+              type: "image",
+              url: imageUrl,
+              caption: image.caption,
+            },
+          }),
+        });
+      } else {
+        console.error(`Missing Image data for building: ${buildingId}`, {
+          hasBuilding: !!building,
+          hasLocation: building?.media,
+        });
+      }
+
+      if (index < building.media.gallery.length - 1) {
+        await delay(1000); // Delay between images
+      }
+    }
+    // Remove the gallery tag from the message
+    cleanedText = cleanedText.replace(match[0], "").trim();
   }
+
+  // for (const [index, match] of matches.entries()) {
+  //   console.log("****** IMAGE Match ****", match);
+  //   const imagePath = match[1];
+  //   const building = buildingInfo[imagePath];
+
+  //   const absoluteUrl = `${process.env.NEXT_PUBLIC_BASE_URL}${imagePath}`;
+  //   const caption = getCaptionFromPath(imagePath);
+
+  //   await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
+  //     method: "POST",
+  //     headers: { "Content-Type": "application/json" },
+  //     body: JSON.stringify({
+  //       to: waId,
+  //       senderType: "bot",
+  //       media: {
+  //         type: "image",
+  //         url: absoluteUrl,
+  //         caption: building.media,
+  //       },
+  //     }),
+  //   });
+
+  //   cleanedText = cleanedText.replace(match[0], "").trim();
+
+  //   // Add 1s delay between images
+  //   if (index < matches.length - 1) {
+  //     await new Promise((resolve) => setTimeout(resolve, 1000));
+  //   }
+  // }
 
   // Handle location requests
   const locationRegex = /<LOCATION:([^>]+)>/g;
@@ -365,7 +430,10 @@ async function handleMediaResponse(waId, responseText) {
             latitude: Number(building.location.latitude),
             longitude: Number(building.location.longitude),
             name: building.name,
-            address: building.location.address || "Location Address",
+            address:
+              building.location.address?.full_address ||
+              building.location.address?.street ||
+              "Location Address",
           },
         }),
       });
@@ -388,28 +456,42 @@ async function handleMediaResponse(waId, responseText) {
   for (const match of contactMatches) {
     const [fullMatch, buildingId, contactType] = match;
     const building = buildingInfo[buildingId];
-
-    if (building && building.contacts[contactType]) {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to: waId,
-          senderType: "bot",
-          media: {
-            type: "contact",
-            contact: {
-              name:
-                contactType === "call_center" ? "Call Center" : "Receptionist",
-              phone: building.contacts[contactType],
-            },
-          },
-        }),
-      });
+    if (!building) {
+      throw new Error(`Building ${buildingId} not found`);
     }
+
+    const contact = building.contacts?.[contactType];
+    if (!contact) {
+      throw new Error(
+        `Contact type ${contactType} not found for ${buildingId}`
+      );
+    }
+    const phone = contact.phones?.[0]?.phone || contact.phones?.[0]?.wa_id;
+    if (!phone) {
+      throw new Error(
+        `Phone number missing for ${contactType} in ${buildingId}`
+      );
+    }
+
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        to: waId,
+        senderType: "bot",
+        media: {
+          type: "contact",
+          contact_type: contactType,
+          contact: contact,
+        },
+      }),
+    });
 
     cleanedText = cleanedText.replace(fullMatch, "").trim();
   }
 
   return cleanedText;
+}
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

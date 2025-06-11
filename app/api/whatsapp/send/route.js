@@ -35,6 +35,18 @@ export async function POST(request) {
     let payload;
     if (media) {
       switch (media.type) {
+        case "video":
+          payload = {
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            to: to,
+            type: "video",
+            video: {
+              link: mediaUrl,
+              caption: media.caption || "",
+            },
+          };
+          break;
         case "image":
           payload = {
             messaging_product: "whatsapp",
@@ -74,41 +86,43 @@ export async function POST(request) {
             contacts: [
               {
                 name: {
-                  formatted_name: media.contact.name,
-                  first_name: "نضال",
-                  last_name: "غديري",
-                  middle_name: "بن علي",
-                  suffix: "NG",
-                  prefix: "GN",
+                  formatted_name:
+                    media.contact.name?.formatted_name ||
+                    (media.contact_type === "call_center"
+                      ? "Call Center"
+                      : "Receptionist"),
+                  first_name: media.contact.name?.first_name || "",
+                  last_name: media.contact.name?.last_name || "",
                 },
                 phones: [
                   {
-                    phone: media.contact.phone,
-                    wa_id: media.contact.phone,
+                    phone: media.contact.phones?.[0]?.phone || "",
+                    wa_id: media.contact.phones?.[0]?.phone || "",
                     type: "WORK",
                   },
                 ],
                 addresses: [
                   {
-                    street: "شارع اللبان بجانب صلالة مول",
-                    city: "صلالة",
-                    state: "ظفار",
-                    zip: "211",
-                    country: "عمان",
-                    country_code: "OM",
-                    type: "WORK",
+                    street: media.contact.addresses?.[0]?.street || "",
+                    city: media.contact.addresses?.[0]?.city || "",
+                    state: media.contact.addresses?.[0]?.state || "",
+                    zip: media.contact.addresses?.[0]?.zip || "",
+                    country: media.contact.addresses?.[0]?.country || "",
+                    country_code:
+                      media.contact.addresses?.[0]?.country_code || "",
+                    type: media.contact.addresses?.[0]?.type || "",
                   },
                 ],
                 emails: [
                   {
-                    email: "ghdiri.nidhal@gmail.com",
-                    type: "WORK",
+                    email: media.contact.emails?.[0]?.email || "",
+                    type: media.contact.emails?.[0]?.type || "",
                   },
                 ],
                 urls: [
                   {
-                    url: "https://nassayem.com",
-                    type: "WORK",
+                    url: media.contact.urls?.[0]?.url || "",
+                    type: media.contact.urls?.[0]?.type || "",
                   },
                 ],
               },
