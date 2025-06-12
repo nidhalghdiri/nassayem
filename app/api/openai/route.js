@@ -189,6 +189,29 @@ export async function POST(request) {
    - عند بدء حجز جديد، استخدم المعلومات الموجودة مباشرة
    - إذا نقصت معلومة واحدة فقط، اسأل عنها فقط
    - أعد صياغة تواريخ العميل تلقائياً للصيغة YYYY-MM-DD
+
+4. **التحقق من الوحدات**:
+   - عند سؤال عن غرف في مبنى معين: استخدم <UNIT_CHECK:معرف_المبنى:نوع_الوحدة>
+     مثال: "هل يوجد شقة بثلاث غرف في السعادة؟" → "<UNIT_CHECK:sadaa:3_rooms>"
+   - إذا لم يتوفر النوع في المبنى:
+     • اقترح مباني أخرى بها هذا النوع
+     • استخدم: <BUILDING_SUGGESTION:نوع_الوحدة>
+
+5. **فحص التوفر**:
+   - استخدم <AVAILABILITY_CHECK:نوع_الوحدة:تاريخ_البدء:تاريخ_الانتهاء> 
+     عند وجود نوع الوحدة والفترة
+
+6. **الأسعار**:
+   - استخدم <PRICE_CHECK> فقط عند توفر:
+     • المبنى
+     • نوع الوحدة
+     • الفترة الكاملة
+   - إذا نقصت معلومات، اطلبها تحديداً
+
+7. **تذكر المعلومات**:
+   - استخدم البيانات من تاريخ المحادثة فقط
+   - لا تخزن البيانات الحساسة (الأشخاص، التواريخ) في قواعد البيانات
+   - أعد استخدام المعلومات المقدمة مسبقاً دون إعادة السؤال
 ## سياسات حاسمة
 1. **فترة الخريف (يونيو-سبتمبر)**:
    - الحجز الشهري غير متاح بتاتاً خلال الخريف
@@ -395,7 +418,15 @@ export async function POST(request) {
     );
   }
 }
-
+// 2. Add building-unit mapping
+const buildingUnitTypes = {
+  awqad_north: ["1_room", "2_rooms"],
+  alwadi: ["1_room", "2_rooms", "3_rooms"],
+  salalah_central: ["1_room", "2_rooms"],
+  hay_tijari: ["1_room", "2_rooms", "3_rooms"],
+  sadaa: ["1_room", "2_rooms"],
+  sadaa_2: ["1_room", "2_rooms", "3_rooms"],
+};
 // Add this function to handle media responses
 
 async function handleMediaResponse(waId, responseText) {
@@ -563,45 +594,73 @@ async function handleMediaResponse(waId, responseText) {
     cleanedText = cleanedText.replace(fullMatch, "").trim();
   }
 
-  // PRICE_CHECK handler
+  // UNIT_CHECK handler
+  const unitCheckRegex = /<UNIT_CHECK:([^:]+):([^>]+)>/g;
+  const unitMatches = [...cleanedText.matchAll(unitCheckRegex)];
+
+  for (const match of unitMatches) {
+    const [fullMatch, buildingId, unitType] = match;
+    const building = buildingInfo[buildingId];
+
+    if (building && buildingUnitTypes[buildingId]?.includes(unitType)) {
+      cleanedText = cleanedText.replace(
+        fullMatch,
+        `نعم، ${building.name} تحتوي على شقق ${unitType.replace("_", " ")}`
+      );
+    } else {
+      // Find alternative buildings
+      const alternatives = Object.entries(buildingUnitTypes)
+        .filter(([id, units]) => units.includes(unitType) && id !== buildingId)
+        .map(([id]) => buildingInfo[id]?.name)
+        .filter(Boolean);
+
+      const suggestion = alternatives.length
+        ? `لكن لدينا في: ${alternatives.join("، ")}`
+        : "عذراً، لا توجد وحدات من هذا النوع في أي بناية";
+
+      cleanedText = cleanedText.replace(
+        fullMatch,
+        `لا، ${
+          building?.name || "هذه البناية"
+        } لا تحتوي على هذا النوع. ${suggestion}`
+      );
+    }
+  }
+
+  // AVAILABILITY_CHECK handler
+  const availabilityRegex = /<AVAILABILITY_CHECK:([^:]+):([^:]+):([^>]+)>/g;
+  const availabilityMatches = [...cleanedText.matchAll(availabilityRegex)];
+
+  for (const match of availabilityMatches) {
+    const [fullMatch, unitType, startDate, endDate] = match;
+    // In real implementation, call your availability API here
+    const isAvailable = true; // Mock result
+
+    cleanedText = cleanedText.replace(
+      fullMatch,
+      isAvailable
+        ? "نعم، الوحدات متاحة في هذه الفترة"
+        : "عذراً، لا توجد وحدات متاحة. هل تريد تواريخ بديلة؟"
+    );
+  }
+
+  // PRICE_CHECK validation
   const priceCheckRegex = /<PRICE_CHECK:([^:]+):([^:]+):([^:]+):([^>]+)>/g;
   const priceMatches = [...cleanedText.matchAll(priceCheckRegex)];
 
   for (const match of priceMatches) {
     const [fullMatch, buildingId, unitType, startDate, endDate] = match;
 
-    try {
-      // const price = await netsuiteApi.getPrice({
-      //   building: buildingId,
-      //   unitType,
-      //   startDate,
-      //   endDate,
-      // });
-      const price = 100;
-      console.log("We try to get the price for : ", {
-        building: buildingId,
-        unitType,
-        startDate,
-        endDate,
-      });
-
-      if (price) {
-        cleanedText = cleanedText.replace(
-          fullMatch,
-          `السعر: ${price} ريال عماني\nهل ترغب بتأكيد الحجز؟`
-        );
-      } else {
-        cleanedText = cleanedText.replace(
-          fullMatch,
-          "عذراً، تعذر الحصول على السعر الآن. يرجى التواصل مع مدير الحجوزات: <CONTACT:awqad_north:call_center>"
-        );
-      }
-    } catch (error) {
+    // Validate required parameters
+    if (!buildingId || !unitType || !startDate || !endDate) {
       cleanedText = cleanedText.replace(
         fullMatch,
-        "حدث خطأ أثناء الحصول على السعر. يرجى المحاولة لاحقاً."
+        "عذراً، أحتاج معرفة (المبنى، نوع الوحدة، والفترة) لحساب السعر"
       );
+      continue;
     }
+
+    // ... existing price check logic ...
   }
 
   return cleanedText;
@@ -612,63 +671,64 @@ function delay(ms) {
 }
 // NEW: Comprehensive info extraction from natural language
 function extractReservationInfo(message, history) {
-  const info = {};
+  // const info = {};
 
-  // Extract people count
-  const peopleMatch = message.match(/(\d+)\s+(شخص|أشخاص|نفر|أفراد)/);
-  if (peopleMatch) info.people = parseInt(peopleMatch[1]);
+  // // Extract people count
+  // const peopleMatch = message.match(/(\d+)\s+(شخص|أشخاص|نفر|أفراد)/);
+  // if (peopleMatch) info.people = parseInt(peopleMatch[1]);
 
-  // Extract dates with natural language parsing
-  const dateMatch = message.match(
-    /(من\s*)?(\d{1,2}\s+[\u0600-\u06FF]+|\d{4}-\d{2}-\d{2})(\s*إلى\s*|\s*-\s*|\s*حتى\s*)(\d{1,2}\s+[\u0600-\u06FF]+|\d{4}-\d{2}-\d{2})/i
-  );
-  if (dateMatch) {
-    const startDate = parseArabicDate(dateMatch[2]);
-    const endDate = parseArabicDate(dateMatch[4]);
-    if (startDate && endDate) {
-      info.dates = {
-        start: formatDate(startDate),
-        end: formatDate(endDate),
-      };
-    }
-  }
+  // // Extract dates with natural language parsing
+  // const dateMatch = message.match(
+  //   /(من\s*)?(\d{1,2}\s+[\u0600-\u06FF]+|\d{4}-\d{2}-\d{2})(\s*إلى\s*|\s*-\s*|\s*حتى\s*)(\d{1,2}\s+[\u0600-\u06FF]+|\d{4}-\d{2}-\d{2})/i
+  // );
+  // if (dateMatch) {
+  //   const startDate = parseArabicDate(dateMatch[2]);
+  //   const endDate = parseArabicDate(dateMatch[4]);
+  //   if (startDate && endDate) {
+  //     info.dates = {
+  //       start: formatDate(startDate),
+  //       end: formatDate(endDate),
+  //     };
+  //   }
+  // }
 
-  // Extract building from message or history
-  const buildingKeywords = {
-    عوقد: "awqad_north",
-    وادي: "alwadi",
-    وسطى: "salalah_central",
-    سوق: "hay_tijari",
-    سعادة: "sadaa",
-    "سعادة 2": "sadaa_2",
-  };
+  // // Extract building from message or history
+  // const buildingKeywords = {
+  //   عوقد: "awqad_north",
+  //   وادي: "alwadi",
+  //   وسطى: "salalah_central",
+  //   سوق: "hay_tijari",
+  //   سعادة: "sadaa",
+  //   "سعادة 2": "sadaa_2",
+  // };
 
-  for (const [keyword, id] of Object.entries(buildingKeywords)) {
-    if (message.includes(keyword)) {
-      info.building = id;
-      break;
-    }
-  }
+  // for (const [keyword, id] of Object.entries(buildingKeywords)) {
+  //   if (message.includes(keyword)) {
+  //     info.building = id;
+  //     break;
+  //   }
+  // }
 
-  // Fallback to history if not found in current message
-  if (!info.building) {
-    for (const msg of [...history].reverse()) {
-      for (const [keyword, id] of Object.entries(buildingKeywords)) {
-        if (msg.content?.includes(keyword)) {
-          info.building = id;
-          break;
-        }
-      }
-      if (info.building) break;
-    }
-  }
+  // // Fallback to history if not found in current message
+  // if (!info.building) {
+  //   for (const msg of [...history].reverse()) {
+  //     for (const [keyword, id] of Object.entries(buildingKeywords)) {
+  //       if (msg.content?.includes(keyword)) {
+  //         info.building = id;
+  //         break;
+  //       }
+  //     }
+  //     if (info.building) break;
+  //   }
+  // }
 
-  // Derive unit type if people count is available
-  if (info.people) {
-    info.unitType = getUnitType(info.people);
-  }
+  // // Derive unit type if people count is available
+  // if (info.people) {
+  //   info.unitType = getUnitType(info.people);
+  // }
 
-  return Object.keys(info).length > 0 ? info : null;
+  // return Object.keys(info).length > 0 ? info : null;
+  return null; // Disable info extraction
 }
 async function handleReservationStep(
   state,
@@ -833,9 +893,10 @@ function formatDate(date) {
 
 // Reservation state management
 async function getReservationState(waId) {
-  const docRef = doc(db, "reservationStates", waId);
-  const docSnap = await getDoc(docRef);
-  return docSnap.exists() ? docSnap.data() : null;
+  // const docRef = doc(db, "reservationStates", waId);
+  // const docSnap = await getDoc(docRef);
+  // return docSnap.exists() ? docSnap.data() : null;
+  return { step: "inactive" }; // Always return inactive since we're not storing state
 }
 
 async function saveReservationState(waId, state) {
