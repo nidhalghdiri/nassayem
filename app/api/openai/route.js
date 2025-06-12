@@ -106,10 +106,13 @@ export async function POST(request) {
     - الوصف: تقع بناية صلالة الوسطى في قلب المدينة، بالقرب من شاطئ الحافة الخلاب وسوق الذهب الشهير. تُعتبر وجهة مثالية للباحثين عن الإقامة الفاخرة مع سهولة الوصول إلى أماكن الجذب السياحي والتجارية مثل المطاعم الراقية، المقاهي العصرية، والمراكز التجارية الكبرى.
   4. السوق المركزي (وسط الحي التجاري)
     - المعرف: "hay_tijari"
+    - الوصف: تقع بناية السوق المركزي في وسط الحي التجاري، بالقرب من أماكن التسوق والخدمات الأساسية مثل لولو هايبرماركت ونستو هايبرماركت. تُعتبر وجهة مثالية للإقامة القريبة من الخدمات اليومية.
   5. السعادة (بجوار المشهور للتسوق)
     - المعرف: "sadaa"
+    - الوصف : تقع بناية السعادة في موقع متميز بجانب متجر المشهور للتسوق، مما يوفر سهولة الوصول إلى الأسواق والمطاعم والمقاهي. تُعتبر خيارًا مثاليًا للإقامة القصيرة أو الطويلة مع تصميمات داخلية عصرية ومرافق متكاملة.
   6. السعادة 2 (مقابل نستو هايبر ماركت)
     - المعرف: "sadaa_2"
+    - الوصف: تقع بناية السعادة 2 في موقع استراتيجي مقابل نستو هايبرماركت، قريبة من المطاعم والمقاهي والمراكز التجارية الكبرى. تُعتبر وجهة مثالية للإقامة القصيرة والطويلة في صلالة.
 ## كيفية إرسال المحتوى المتقدم
 1. **الصور**:
   - استخدم الصيغة: <GALLERY:معرف_المبنى>
@@ -141,6 +144,36 @@ export async function POST(request) {
   - شقق بغرفتين: صالة + مطبخ + حمامين
   - شقق بثلاث غرف: صالة + مطبخ + ثلاثة حمامات
   - فيلا 7 غرف: مجلسين + مطبخ + 7 حمامات + غرفة عاملة
+
+## تدفق عملية الحجز
+1. عند التعبير عن الرغبة في الحجز:
+   - اسأل أولاً: "كم عدد الأشخاص؟"
+   - ثم اسأل: "ما هي تواريخ إقامتك؟ (من فضلك اكتبها بالصيغة: من 2025-09-01 إلى 2025-09-05)"
+   - ثم اسأل: "أي منطقة تفضل؟ [اذكر المناطق المتاحة]"
+   -  "كم السعر لشقة بغرفتين في السوق المركزي من 10 إلى 15 سبتمبر؟"
+     → "<PRICE_CHECK:hay_tijari:2_rooms:2025-09-10:2025-09-15>"
+
+  - "أريد حجز شقة لـ 4 أشخاص"
+   → "<RESERVATION_START>"
+2. عند طلب السعر:
+   - استخدم الوسم <PRICE_CHECK> فقط بعد معرفة:
+       * نوع الوحدة (بناءً على عدد الأشخاص)
+       * المبنى
+       * التواريخ الدقيقة
+   - مثال: "السعر سيكون: <PRICE_CHECK:sadaa:2_rooms:2025-09-10:2025-09-15>"
+3. بعد اكتمال المعلومات:
+   - أرسل تأكيداً: "خليني أتأكد: تريد شقة بغرفتين في السعادة من 10 إلى 15 سبتمبر لـ 4 أشخاص، صحيح؟"
+   - ثم قدم خيار الحجز: "هل ترغب بتأكيد الحجز الآن؟"
+
+مثال:
+"هل يوجد شقة بثلاث غرف في السعادة؟"
+→ "<UNIT_CHECK:sadaa:3_rooms>"
+
+"أبغى أعرف إذا كانت متاحة من 15 إلى 20 سبتمبر؟"
+→ "<DATE_CHECK:2025-09-15:2025-09-20>"
+
+"كم السعر لشقة بغرفتين في السوق المركزي من 10 إلى 15 سبتمبر؟"
+→ "<PRICE_CHECK:hay_tijari:2_rooms:2025-09-10:2025-09-15>"
 
 ## سياسات حاسمة
 1. **فترة الخريف (يونيو-سبتمبر)**:
@@ -230,10 +263,55 @@ export async function POST(request) {
         status: 500,
       });
     }
-    const cleanedResponse = await handleMediaResponse(waId, aiResponse);
-    console.log("[OPENAI] cleanedResponse: ", cleanedResponse);
 
-    if (cleanedResponse !== aiResponse) {
+    // Get current reservation state
+    let reservationState = (await getReservationState(waId)) || {
+      step: "inactive",
+      people: null,
+      dates: null,
+      building: null,
+      unitType: null,
+    };
+
+    // Check if AI is starting reservation
+    if (
+      aiResponse.includes("كم عدد الأشخاص") &&
+      reservationState.step === "inactive"
+    ) {
+      reservationState = {
+        step: "asking_people",
+        people: null,
+        dates: null,
+        building: null,
+        unitType: null,
+      };
+      await saveReservationState(waId, reservationState);
+    }
+
+    let finalResponse = aiResponse;
+    // Handle reservation flow
+    if (reservationState.step !== "inactive") {
+      const result = await handleReservationStep(
+        reservationState,
+        sanitizedMessage,
+        waId
+      );
+      if (result.handled) {
+        await saveReservationState(waId, result.newState);
+        // Send response if provided
+        if (result.response) {
+          finalResponse = result.response;
+        }
+        return new Response(
+          JSON.stringify({ success: true, response: aiResponse }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    const cleanedResponse = await handleMediaResponse(waId, finalResponse);
+    console.log("[OPENAI] cleanedResponse: ", cleanedResponse);
+    if (cleanedResponse !== finalResponse) {
       // Media was sent, no need to send text if empty
       if (cleanedResponse) {
         // Send response via WhatsApp
@@ -258,16 +336,11 @@ export async function POST(request) {
         },
         body: JSON.stringify({
           to: waId,
-          message: aiResponse,
+          message: finalResponse,
           senderType: "bot", // Add this parameter
         }),
       });
     }
-
-    return new Response(
-      JSON.stringify({ success: true, response: aiResponse }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
   } catch (error) {
     console.error("OpenAI API error details:", {
       message: error.message,
@@ -386,36 +459,6 @@ async function handleMediaResponse(waId, responseText) {
     cleanedText = cleanedText.replace(match[0], "").trim();
   }
 
-  // for (const [index, match] of matches.entries()) {
-  //   console.log("****** IMAGE Match ****", match);
-  //   const imagePath = match[1];
-  //   const building = buildingInfo[imagePath];
-
-  //   const absoluteUrl = `${process.env.NEXT_PUBLIC_BASE_URL}${imagePath}`;
-  //   const caption = getCaptionFromPath(imagePath);
-
-  //   await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
-  //     method: "POST",
-  //     headers: { "Content-Type": "application/json" },
-  //     body: JSON.stringify({
-  //       to: waId,
-  //       senderType: "bot",
-  //       media: {
-  //         type: "image",
-  //         url: absoluteUrl,
-  //         caption: building.media,
-  //       },
-  //     }),
-  //   });
-
-  //   cleanedText = cleanedText.replace(match[0], "").trim();
-
-  //   // Add 1s delay between images
-  //   if (index < matches.length - 1) {
-  //     await new Promise((resolve) => setTimeout(resolve, 1000));
-  //   }
-  // }
-
   // Handle location requests
   const locationRegex = /<LOCATION:([^>]+)>/g;
   const locationMatches = [...responseText.matchAll(locationRegex)];
@@ -498,8 +541,214 @@ async function handleMediaResponse(waId, responseText) {
     cleanedText = cleanedText.replace(fullMatch, "").trim();
   }
 
+  // PRICE_CHECK handler
+  const priceCheckRegex = /<PRICE_CHECK:([^:]+):([^:]+):([^:]+):([^>]+)>/g;
+  const priceMatches = [...cleanedText.matchAll(priceCheckRegex)];
+
+  for (const match of priceMatches) {
+    const [fullMatch, buildingId, unitType, startDate, endDate] = match;
+
+    try {
+      // const price = await netsuiteApi.getPrice({
+      //   building: buildingId,
+      //   unitType,
+      //   startDate,
+      //   endDate,
+      // });
+      const price = 100;
+      console.log("We try to get the price for : ", {
+        building: buildingId,
+        unitType,
+        startDate,
+        endDate,
+      });
+
+      if (price) {
+        cleanedText = cleanedText.replace(
+          fullMatch,
+          `السعر: ${price} ريال عماني\nهل ترغب بتأكيد الحجز؟`
+        );
+      } else {
+        cleanedText = cleanedText.replace(
+          fullMatch,
+          "عذراً، تعذر الحصول على السعر الآن. يرجى التواصل مع مدير الحجوزات: <CONTACT:awqad_north:call_center>"
+        );
+      }
+    } catch (error) {
+      cleanedText = cleanedText.replace(
+        fullMatch,
+        "حدث خطأ أثناء الحصول على السعر. يرجى المحاولة لاحقاً."
+      );
+    }
+  }
+
   return cleanedText;
 }
+
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function handleReservationStep(state, userMessage, waId) {
+  if (state.lastUpdated < Date.now() - 30 * 60 * 1000) {
+    // 30 minutes
+    await clearReservationState(waId);
+    return {
+      handled: true,
+      newState: { step: "inactive" },
+      response: "انتهت جلسة الحجز. ابدأ من جديد إذا كنت ترغب بالحجز.",
+    };
+  }
+  switch (state.step) {
+    case "asking_people":
+      const people = extractNumber(userMessage);
+      if (people) {
+        return {
+          handled: true,
+          newState: {
+            ...state,
+            step: "asking_dates",
+            people,
+            unitType: getUnitType(people),
+          },
+          response:
+            "تم التسجيل! متى تود الإقامة؟ (من فضلك اكتب: من YYYY-MM-DD إلى YYYY-MM-DD)",
+        };
+      }
+      return {
+        handled: true,
+        newState: state,
+        response: "عفواً، كم عدد الأشخاص؟",
+      };
+
+    case "asking_dates":
+      const dates = extractDates(userMessage);
+      if (dates) {
+        return {
+          handled: true,
+          newState: {
+            ...state,
+            step: "asking_building",
+            dates,
+          },
+          response:
+            "أي منطقة تفضل؟ عندنا: عوقد الشمالية، الوادي، صلالة الوسطى...",
+        };
+      }
+      return {
+        handled: true,
+        newState: state,
+        response: "من فضلك اكتب التواريخ بالصيغة: من YYYY-MM-DD إلى YYYY-MM-DD",
+      };
+
+    case "asking_building":
+      const buildingId = extractBuildingId(userMessage);
+      if (buildingId) {
+        return {
+          handled: true,
+          newState: {
+            ...state,
+            step: "confirming",
+            building: buildingId,
+          },
+          response: `هل هذا صحيح؟ 
+عدد الأشخاص: ${state.people} 
+التواريخ: من ${state.dates.start} إلى ${state.dates.end}
+المنطقة: ${buildingId}
+السعر: <PRICE_CHECK:${buildingId}:${state.unitType}:${state.dates.start}:${state.dates.end}>`,
+        };
+      }
+      return {
+        handled: true,
+        newState: state,
+        response: "عفواً، أي منطقة تفضل؟",
+      };
+
+    case "confirming":
+      if (userMessage.includes("نعم") || userMessage.includes("أؤكد")) {
+        // Create reservation
+        // const reservationId = await createReservation(state);
+        console.log("createReservation = ", state);
+
+        // Clear state
+        await clearReservationState(waId);
+
+        return {
+          handled: true,
+          newState: { step: "inactive" },
+          response: `تم الحجز بنجاح! 🎉
+رقم الحجز: ${123}
+للدفع: <CONTACT:${state.building}:receptionist>`,
+        };
+      } else {
+        // Clear state if user declines
+        await clearReservationState(waId);
+        return {
+          handled: true,
+          newState: { step: "inactive" },
+          response: "تم إلغاء الحجز. هل يمكنني مساعدتك بأي شيء آخر؟",
+        };
+      }
+
+    default:
+      return { handled: false };
+  }
+}
+
+// Reservation state management
+async function getReservationState(waId) {
+  const docRef = doc(db, "reservationStates", waId);
+  const docSnap = await getDoc(docRef);
+  return docSnap.exists() ? docSnap.data() : null;
+}
+
+async function saveReservationState(waId, state) {
+  await setDoc(doc(db, "reservationStates", waId), state);
+}
+
+async function clearReservationState(waId) {
+  await setDoc(doc(db, "reservationStates", waId), { step: "inactive" });
+}
+
+// Add these helper functions
+function extractNumber(text) {
+  const match = text.match(/\d+/);
+  return match ? parseInt(match[0]) : null;
+}
+
+function extractDates(text) {
+  const regex =
+    /(\d{4}-\d{2}-\d{2})\s*إلى\s*(\d{4}-\d{2}-\d{2})|(\d{4}-\d{2}-\d{2})\s*-\s*(\d{4}-\d{2}-\d{2})/;
+  const match = text.match(regex);
+
+  if (match) {
+    // Handle both Arabic "to" and hyphen formats
+    const start = match[1] || match[3];
+    const end = match[2] || match[4];
+    return { start, end };
+  }
+  return null;
+}
+
+function extractBuildingId(text) {
+  const buildings = {
+    عوقد: "awqad_north",
+    وادي: "alwadi",
+    وسطى: "salalah_central",
+    سوق: "hay_tijari",
+    سعادة: "sadaa",
+    "سعادة 2": "sadaa_2",
+  };
+
+  for (const [keyword, id] of Object.entries(buildings)) {
+    if (text.includes(keyword)) return id;
+  }
+  return null;
+}
+
+function getUnitType(people) {
+  if (people <= 2) return "1_room";
+  if (people <= 4) return "2_rooms";
+  if (people <= 6) return "3_rooms";
+  return "7_room_villa";
 }
