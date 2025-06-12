@@ -264,6 +264,8 @@ export async function POST(request) {
       });
     }
 
+    console.log("[CHECK RES] AI Response: ", aiResponse);
+
     // Get current reservation state
     let reservationState = (await getReservationState(waId)) || {
       step: "inactive",
@@ -272,6 +274,7 @@ export async function POST(request) {
       building: null,
       unitType: null,
     };
+    console.log("[CHECK RES] 1. Current reservationState: ", reservationState);
 
     // Check if AI is starting reservation
     if (
@@ -287,6 +290,7 @@ export async function POST(request) {
       };
       await saveReservationState(waId, reservationState);
     }
+    console.log("[CHECK RES] 2. Current reservationState: ", reservationState);
 
     let finalResponse = aiResponse;
     // Handle reservation flow
@@ -296,16 +300,14 @@ export async function POST(request) {
         sanitizedMessage,
         waId
       );
+      console.log("[CHECK RES] Handle reservationState: ", result);
+
       if (result.handled) {
         await saveReservationState(waId, result.newState);
         // Send response if provided
         if (result.response) {
           finalResponse = result.response;
         }
-        return new Response(
-          JSON.stringify({ success: true, response: aiResponse }),
-          { status: 200, headers: { "Content-Type": "application/json" } }
-        );
       }
     }
 
@@ -341,6 +343,10 @@ export async function POST(request) {
         }),
       });
     }
+    return new Response(
+      JSON.stringify({ success: true, response: aiResponse }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
   } catch (error) {
     console.error("OpenAI API error details:", {
       message: error.message,
