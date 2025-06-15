@@ -13,6 +13,7 @@ import { db } from "@/lib/firebase";
 import { propertyImages } from "@/lib/propertyImages";
 import { getCaptionFromPath } from "@/lib/imageUtils";
 import { buildingInfo } from "@/lib/BuildingData";
+import netsuiteService from "@/lib/netsuiteService";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -434,10 +435,17 @@ async function handleUnitCheck(buildingId, unitType) {
     return "عذراً، أحتاج معرفة المبنى ونوع الوحدة للتحقق";
   }
 
+  const response = await netsuiteService.request("unit_types", {
+    building: buildingId,
+  });
   // const unitTypes = await netsuite.getUnitTypes(buildingId);
 
   // const exists = unitTypes.includes(unitType);
-  const exists = true;
+  if (response.error) {
+    return "عذراً، حدث خطأ في التحقق من نوع الوحدة";
+  }
+
+  const exists = response.unit_types?.includes(unitType);
   return exists
     ? `نعم، ${
         buildingInfo[buildingId]?.name || "هذا المبنى"
@@ -464,17 +472,17 @@ async function handleAvailabilityCheck(
     endDate,
   });
 
-  // const availability = await netsuite.checkAvailability(
-  //   buildingId,
-  //   unitType,
-  //   startDate,
-  //   endDate
-  // );
-  const availability = {
-    available: true,
-  };
+  const response = await netsuiteService.request("availability", {
+    building: buildingId,
+    unitType,
+    startDate,
+    endDate,
+  });
+  if (response.error) {
+    return "عذراً، حدث خطأ في التحقق من التوفر";
+  }
 
-  return availability.available
+  return response.available
     ? `نعم، الوحدات متاحة في ${buildingInfo[buildingId]?.name} من ${startDate} إلى ${endDate}`
     : `عذراً، لا توجد وحدات متاحة. هل ترغب بفترة بديلة؟`;
 }
@@ -484,14 +492,19 @@ async function handlePriceCheck(buildingId, unitType, startDate, endDate) {
     return "عذراً، أحتاج معرفة (المبنى، نوع الوحدة، والفترة) لحساب السعر";
   }
 
-  // const priceData = await netsuite.getPrice(buildingId, unitType, startDate, endDate);
-  const priceData = {
-    amount: 100,
-    taxes: 20,
-  };
+  const response = await netsuiteService.request("price", {
+    building: buildingId,
+    unitType,
+    startDate,
+    endDate,
+  });
 
-  return `السعر الإجمالي: ${priceData.amount} ريال عماني 
-    (يشمل ${priceData.taxes} ضريبة)`;
+  if (response.error) {
+    return "عذراً، حدث خطأ في حساب السعر";
+  }
+
+  return `السعر الإجمالي: ${response.total} ريال عماني 
+    (يشمل ${response.taxes} ضريبة)`;
 }
 
 async function handleMediaResponse(waId, responseText) {
