@@ -383,7 +383,7 @@ async function handleSpecialTags(waId, responseText) {
 
   cleanedText = await processTag(
     cleanedText,
-    /<AVAILABILITY_CHECK:([^:]+):([^:]+):([^:]+):([^>]+)>/g,
+    /<AVAILABILITY_CHECK:([^:]+):([^:]+):([^>]+)>/g,
     handleAvailabilityCheck
   );
 
@@ -437,6 +437,7 @@ async function handleUnitCheck(buildingId, unitType) {
 
   const response = await netsuiteService.request("unit_types", {
     building: buildingId,
+    unitType: unitType,
   });
   // const unitTypes = await netsuite.getUnitTypes(buildingId);
 
