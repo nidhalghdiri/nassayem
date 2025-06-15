@@ -300,88 +300,28 @@ export async function POST(request) {
         status: 500,
       });
     }
-
     console.log("[CHECK RES] AI Response: ", aiResponse);
 
-    // Get current reservation state
-    let reservationState = (await getReservationState(waId)) || {
-      step: "inactive",
-      people: null,
-      dates: null,
-      building: null,
-      unitType: null,
-      lastUpdated: Date.now(),
-    };
-    console.log("[CHECK RES] 1. Current reservationState: ", reservationState);
+    const finalResponse = await handleSpecialTags(waId, aiResponse);
 
-    // Handle new information extraction
-    const extractedInfo = extractReservationInfo(
-      sanitizedMessage,
-      conversationHistory
-    );
-    if (extractedInfo) {
-      reservationState = {
-        ...reservationState,
-        ...extractedInfo,
-        lastUpdated: Date.now(),
-      };
-      await saveReservationState(waId, reservationState);
-    }
+    console.log("[CHECK RES] 2. finalResponse: ", finalResponse);
 
-    console.log("[CHECK RES] 2. Extracted Info: ", extractedInfo);
-
-    let finalResponse = aiResponse;
-    // Handle reservation flow
-    if (reservationState.step !== "inactive") {
-      const result = await handleReservationStep(
-        reservationState,
-        sanitizedMessage,
-        waId,
-        conversationHistory
-      );
-      console.log("[CHECK RES] 3. Handle reservationState: ", result);
-
-      if (result.handled) {
-        await saveReservationState(waId, result.newState);
-        // Send response if provided
-        if (result.response) {
-          finalResponse = result.response;
-        }
-      }
-    }
-
-    const cleanedResponse = await handleMediaResponse(waId, finalResponse);
-    console.log("[OPENAI] cleanedResponse: ", cleanedResponse);
-    if (cleanedResponse !== finalResponse) {
-      // Media was sent, no need to send text if empty
-      if (cleanedResponse) {
-        // Send response via WhatsApp
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            to: waId,
-            message: cleanedResponse,
-            senderType: "bot", // Add this parameter
-          }),
-        });
-      }
-    } else {
-      // Send response via WhatsApp
+    // Then send the cleaned text if needed
+    if (finalResponse.trim()) {
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           to: waId,
           message: finalResponse,
-          senderType: "bot", // Add this parameter
+          senderType: "bot",
         }),
       });
     }
+
+    // const cleanedResponse = await handleMediaResponse(waId, finalResponse);
+    // console.log("[OPENAI] cleanedResponse: ", cleanedResponse);
+
     return new Response(
       JSON.stringify({ success: true, response: aiResponse }),
       { status: 200, headers: { "Content-Type": "application/json" } }
@@ -428,6 +368,131 @@ const buildingUnitTypes = {
   sadaa_2: ["1_room", "2_rooms", "3_rooms"],
 };
 // Add this function to handle media responses
+
+// Centralized tag handler
+async function handleSpecialTags(waId, responseText) {
+  let cleanedText = responseText;
+
+  // Process all tags in sequence
+  cleanedText = await processTag(
+    cleanedText,
+    /<UNIT_CHECK:([^:]+):([^>]+)>/g,
+    handleUnitCheck
+  );
+
+  cleanedText = await processTag(
+    cleanedText,
+    /<AVAILABILITY_CHECK:([^:]+):([^:]+):([^:]+):([^>]+)>/g,
+    handleAvailabilityCheck
+  );
+
+  cleanedText = await processTag(
+    cleanedText,
+    /<PRICE_CHECK:([^:]+):([^:]+):([^:]+):([^>]+)>/g,
+    handlePriceCheck
+  );
+
+  // Media handlers remain unchanged
+  cleanedText = await handleGallery(waId, cleanedText);
+  cleanedText = await handleLocation(waId, cleanedText);
+  cleanedText = await handleContact(waId, cleanedText);
+
+  return cleanedText;
+}
+
+// Replace with this improved version
+async function processTag(text, regex, handler) {
+  const matches = [...text.matchAll(regex)];
+  if (!matches.length) return text;
+
+  const replacements = await Promise.all(
+    matches.map(async ([fullMatch, ...params]) => {
+      try {
+        return {
+          from: fullMatch,
+          to: await handler(...params),
+        };
+      } catch (error) {
+        console.error(`Error processing tag ${fullMatch}:`, error);
+        return {
+          from: fullMatch,
+          to: "عذراً، حدث خطأ في النظام. يرجى المحاولة لاحقاً",
+        };
+      }
+    })
+  );
+
+  return replacements.reduce(
+    (result, { from, to }) => result.replace(from, to),
+    text
+  );
+}
+
+// NetSuite Handlers
+async function handleUnitCheck(buildingId, unitType) {
+  if (!buildingId || !unitType) {
+    return "عذراً، أحتاج معرفة المبنى ونوع الوحدة للتحقق";
+  }
+
+  // const unitTypes = await netsuite.getUnitTypes(buildingId);
+
+  // const exists = unitTypes.includes(unitType);
+  const exists = true;
+  return exists
+    ? `نعم، ${
+        buildingInfo[buildingId]?.name || "هذا المبنى"
+      } يحتوي على ${unitType.replace("_", " ")}`
+    : `لا، ${
+        buildingInfo[buildingId]?.name || "هذا المبنى"
+      } لا يحتوي على هذا النوع من الوحدات`;
+}
+
+async function handleAvailabilityCheck(
+  buildingId,
+  unitType,
+  startDate,
+  endDate
+) {
+  if (!buildingId || !unitType || !startDate || !endDate) {
+    return "عذراً، أحتاج معرفة (المبنى، نوع الوحدة، والفترة) للتحقق من التوفر";
+  }
+
+  console.log("Handle Availability Check: ", {
+    buildingId,
+    unitType,
+    startDate,
+    endDate,
+  });
+
+  // const availability = await netsuite.checkAvailability(
+  //   buildingId,
+  //   unitType,
+  //   startDate,
+  //   endDate
+  // );
+  const availability = {
+    available: true,
+  };
+
+  return availability.available
+    ? `نعم، الوحدات متاحة في ${buildingInfo[buildingId]?.name} من ${startDate} إلى ${endDate}`
+    : `عذراً، لا توجد وحدات متاحة. هل ترغب بفترة بديلة؟`;
+}
+
+async function handlePriceCheck(buildingId, unitType, startDate, endDate) {
+  if (!buildingId || !unitType || !startDate || !endDate) {
+    return "عذراً، أحتاج معرفة (المبنى، نوع الوحدة، والفترة) لحساب السعر";
+  }
+
+  // const priceData = await netsuite.getPrice(buildingId, unitType, startDate, endDate);
+  const priceData = {
+    amount: 100,
+    taxes: 20,
+  };
+
+  return `السعر الإجمالي: ${priceData.amount} ريال عماني 
+    (يشمل ${priceData.taxes} ضريبة)`;
+}
 
 async function handleMediaResponse(waId, responseText) {
   let cleanedText = responseText;
@@ -666,325 +731,172 @@ async function handleMediaResponse(waId, responseText) {
   return cleanedText;
 }
 
+// Media handlers with enhanced validation and error handling
+async function handleGallery(waId, text) {
+  const galleryRegex = /<GALLERY:([^>]+)>/g;
+  const galleryMatches = [...text.matchAll(galleryRegex)];
+  let cleanedText = text;
+  const processedBuildings = new Set();
+
+  for (const match of galleryMatches) {
+    const [fullMatch, buildingId] = match;
+
+    // Skip if already processed this building in current message
+    if (processedBuildings.has(buildingId)) {
+      cleanedText = cleanedText.replace(fullMatch, "").trim();
+      continue;
+    }
+    processedBuildings.add(buildingId);
+
+    try {
+      const building = buildingInfo[buildingId];
+      if (!building?.media?.gallery) {
+        throw new Error(`No gallery data for building ${buildingId}`);
+      }
+
+      // Send video first if available
+      if (building.media.video) {
+        await sendMedia(waId, {
+          type: "video",
+          url: `${process.env.NEXT_PUBLIC_BASE_URL}${building.media.video.url}`,
+          caption: building.media.video.caption || `فيديو ${building.name}`,
+        });
+        await delay(1000); // Rate limiting
+      }
+
+      // Send images (max 3)
+      const imagesToSend = building.media.gallery.slice(0, 3);
+      for (const [index, image] of imagesToSend.entries()) {
+        await sendMedia(waId, {
+          type: "image",
+          url: `${process.env.NEXT_PUBLIC_BASE_URL}${image.url}`,
+          caption: image.caption || `صورة ${index + 1} من ${building.name}`,
+        });
+        if (index < imagesToSend.length - 1) await delay(800);
+      }
+
+      cleanedText = cleanedText.replace(fullMatch, "").trim();
+    } catch (error) {
+      console.error(`Gallery error for ${buildingId}:`, error);
+      cleanedText = cleanedText.replace(
+        fullMatch,
+        `(تعذر عرض معرض ${buildingId})`
+      );
+    }
+  }
+
+  return cleanedText;
+}
+
+async function handleLocation(waId, text) {
+  const locationRegex = /<LOCATION:([^>]+)>/g;
+  const locationMatches = [...text.matchAll(locationRegex)];
+  let cleanedText = text;
+
+  for (const match of locationMatches) {
+    const [fullMatch, buildingId] = match;
+
+    try {
+      const building = buildingInfo[buildingId];
+      if (!building?.location) {
+        throw new Error(`No location data for ${buildingId}`);
+      }
+
+      await sendMedia(waId, {
+        type: "location",
+        latitude: Number(building.location.latitude),
+        longitude: Number(building.location.longitude),
+        name: building.name,
+        address:
+          building.location.address?.full_address ||
+          building.location.address?.street ||
+          "موقع نسائم صلالة",
+      });
+
+      cleanedText = cleanedText.replace(fullMatch, "").trim();
+    } catch (error) {
+      console.error(`Location error for ${buildingId}:`, error);
+      cleanedText = cleanedText.replace(
+        fullMatch,
+        `(تعذر إرسال موقع ${buildingId})`
+      );
+    }
+  }
+
+  return cleanedText;
+}
+
+async function handleContact(waId, text) {
+  const contactRegex = /<CONTACT:([^:]+):(\w+)>/g;
+  const contactMatches = [...text.matchAll(contactRegex)];
+  let cleanedText = text;
+
+  for (const match of contactMatches) {
+    const [fullMatch, buildingId, contactType] = match;
+
+    try {
+      const building = buildingInfo[buildingId];
+      if (!building?.contacts?.[contactType]) {
+        throw new Error(`No ${contactType} contact for ${buildingId}`);
+      }
+
+      const contact = building.contacts[contactType];
+      const phone = contact.phones?.[0]?.phone || contact.phones?.[0]?.wa_id;
+      if (!phone) throw new Error(`No phone number for ${contactType}`);
+
+      await sendMedia(waId, {
+        type: "contact",
+        contact_type: contactType,
+        contact: {
+          ...contact,
+          phones: [{ phone, wa_id: phone }], // Ensure WhatsApp-compatible format
+        },
+      });
+
+      cleanedText = cleanedText.replace(fullMatch, "").trim();
+    } catch (error) {
+      console.error(`Contact error (${buildingId}:${contactType}):`, error);
+      cleanedText = cleanedText.replace(
+        fullMatch,
+        `(تعذر إرسال بيانات الاتصال لل${contactType})`
+      );
+    }
+  }
+
+  return cleanedText;
+}
+
+// Shared media sending function with retry logic
+async function sendMedia(waId, media) {
+  const MAX_RETRIES = 2;
+  let attempts = 0;
+
+  while (attempts <= MAX_RETRIES) {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: waId,
+            senderType: "bot",
+            media,
+          }),
+        }
+      );
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return; // Success
+    } catch (error) {
+      attempts++;
+      if (attempts > MAX_RETRIES) throw error;
+      await delay(1000 * attempts); // Exponential backoff
+    }
+  }
+}
+
+// Utility function
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-// NEW: Comprehensive info extraction from natural language
-function extractReservationInfo(message, history) {
-  // const info = {};
-
-  // // Extract people count
-  // const peopleMatch = message.match(/(\d+)\s+(شخص|أشخاص|نفر|أفراد)/);
-  // if (peopleMatch) info.people = parseInt(peopleMatch[1]);
-
-  // // Extract dates with natural language parsing
-  // const dateMatch = message.match(
-  //   /(من\s*)?(\d{1,2}\s+[\u0600-\u06FF]+|\d{4}-\d{2}-\d{2})(\s*إلى\s*|\s*-\s*|\s*حتى\s*)(\d{1,2}\s+[\u0600-\u06FF]+|\d{4}-\d{2}-\d{2})/i
-  // );
-  // if (dateMatch) {
-  //   const startDate = parseArabicDate(dateMatch[2]);
-  //   const endDate = parseArabicDate(dateMatch[4]);
-  //   if (startDate && endDate) {
-  //     info.dates = {
-  //       start: formatDate(startDate),
-  //       end: formatDate(endDate),
-  //     };
-  //   }
-  // }
-
-  // // Extract building from message or history
-  // const buildingKeywords = {
-  //   عوقد: "awqad_north",
-  //   وادي: "alwadi",
-  //   وسطى: "salalah_central",
-  //   سوق: "hay_tijari",
-  //   سعادة: "sadaa",
-  //   "سعادة 2": "sadaa_2",
-  // };
-
-  // for (const [keyword, id] of Object.entries(buildingKeywords)) {
-  //   if (message.includes(keyword)) {
-  //     info.building = id;
-  //     break;
-  //   }
-  // }
-
-  // // Fallback to history if not found in current message
-  // if (!info.building) {
-  //   for (const msg of [...history].reverse()) {
-  //     for (const [keyword, id] of Object.entries(buildingKeywords)) {
-  //       if (msg.content?.includes(keyword)) {
-  //         info.building = id;
-  //         break;
-  //       }
-  //     }
-  //     if (info.building) break;
-  //   }
-  // }
-
-  // // Derive unit type if people count is available
-  // if (info.people) {
-  //   info.unitType = getUnitType(info.people);
-  // }
-
-  // return Object.keys(info).length > 0 ? info : null;
-  return null; // Disable info extraction
-}
-async function handleReservationStep(
-  state,
-  userMessage,
-  waId,
-  conversationHistory
-) {
-  if (state.lastUpdated < Date.now() - 30 * 60 * 1000) {
-    // 30 minutes
-    await clearReservationState(waId);
-    return {
-      handled: true,
-      newState: { step: "inactive" },
-      response: "انتهت جلسة الحجز. ابدأ من جديد إذا كنت ترغب بالحجز.",
-    };
-  }
-  const nextState = { ...state, lastUpdated: Date.now() };
-  let response = null;
-  switch (state.step) {
-    case "asking_people":
-      if (state.people) {
-        // People already extracted, move to next step
-        nextState.step = "asking_dates";
-        response =
-          "تم التسجيل! متى تود الإقامة؟ (مثال: من 1 يوليو إلى 5 يوليو)";
-      } else {
-        const people = extractNumber(userMessage);
-        if (people) {
-          nextState.step = "asking_dates";
-          nextState.people = people;
-          nextState.unitType = getUnitType(people);
-          response =
-            "تم التسجيل! متى تود الإقامة؟ (مثال: من 1 يوليو إلى 5 يوليو)";
-        } else {
-          response = "عفواً، كم عدد الأشخاص؟";
-        }
-      }
-      break;
-
-    case "asking_dates":
-      if (state.dates) {
-        // Dates already extracted, move to next step
-        nextState.step = "asking_building";
-        response =
-          "أي منطقة تفضل؟ عندنا: عوقد الشمالية، الوادي، صلالة الوسطى...";
-      } else {
-        const dates = extractDates(userMessage, conversationHistory);
-        if (dates) {
-          nextState.step = "asking_building";
-          nextState.dates = dates;
-          response =
-            "أي منطقة تفضل؟ عندنا: عوقد الشمالية، الوادي، صلالة الوسطى...";
-        } else {
-          response = "من فضلك اكتب التواريخ (مثال: من 1 يوليو إلى 5 يوليو)";
-        }
-      }
-      break;
-
-    case "asking_building":
-      const buildingId = extractBuildingId(userMessage);
-      if (state.building) {
-        // Building already extracted, move to confirmation
-        nextState.step = "confirming";
-        response = confirmationMessage(nextState);
-      } else {
-        const buildingId = extractBuildingId(userMessage, conversationHistory);
-        if (buildingId) {
-          nextState.step = "confirming";
-          nextState.building = buildingId;
-          response = confirmationMessage(nextState);
-        } else {
-          response = "عفواً، أي منطقة تفضل؟";
-        }
-      }
-      break;
-
-    case "confirming":
-      if (userMessage.match(/(نعم|أؤكد|صح|موافق)/i)) {
-        // ... create reservation logic ...
-        await clearReservationState(waId);
-        response = `تم الحجز بنجاح! 🎉
-رقم الحجز: ${123}
-للدفع: <CONTACT:${state.building}:receptionist>`;
-      } else {
-        await clearReservationState(waId);
-        response = "تم إلغاء الحجز. هل يمكنني مساعدتك بأي شيء آخر؟";
-      }
-      break;
-
-    default:
-      if (userMessage.match(/حجز|أريد حجز|أرغب بالحجز/i)) {
-        nextState.step = "asking_people";
-        response = "كم عدد الأشخاص؟";
-      }
-  }
-  if (response) {
-    return {
-      handled: true,
-      newState: nextState,
-      response,
-    };
-  }
-
-  return { handled: false };
-}
-
-// NEW: Arabic date parser
-function parseArabicDate(dateStr) {
-  const months = {
-    يناير: 0,
-    فبراير: 1,
-    مارس: 2,
-    أبريل: 3,
-    مايو: 4,
-    يونيو: 5,
-    يوليو: 6,
-    أغسطس: 7,
-    سبتمبر: 8,
-    أكتوبر: 9,
-    نوفمبر: 10,
-    ديسمبر: 11,
-    // English fallbacks
-    january: 0,
-    february: 1,
-    march: 2,
-    april: 3,
-    may: 4,
-    june: 5,
-    july: 6,
-    august: 7,
-    september: 8,
-    october: 9,
-    november: 10,
-    december: 11,
-  };
-
-  // Try ISO format first
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    return new Date(dateStr);
-  }
-
-  // Try natural language format
-  const match = dateStr.match(/(\d{1,2})\s+(\S+)/);
-  if (match) {
-    const day = parseInt(match[1]);
-    const monthName = match[2].toLowerCase();
-    const month = months[monthName];
-
-    if (month !== undefined) {
-      const now = new Date();
-      const year = now.getFullYear();
-      return new Date(year, month, day);
-    }
-  }
-
-  return null;
-}
-
-function formatDate(date) {
-  return date.toISOString().split("T")[0];
-}
-
-// Reservation state management
-async function getReservationState(waId) {
-  // const docRef = doc(db, "reservationStates", waId);
-  // const docSnap = await getDoc(docRef);
-  // return docSnap.exists() ? docSnap.data() : null;
-  return { step: "inactive" }; // Always return inactive since we're not storing state
-}
-
-async function saveReservationState(waId, state) {
-  await setDoc(doc(db, "reservationStates", waId), state);
-}
-
-async function clearReservationState(waId) {
-  await setDoc(doc(db, "reservationStates", waId), { step: "inactive" });
-}
-
-// Add these helper functions
-function extractNumber(text) {
-  const match = text.match(/\d+/);
-  return match ? parseInt(match[0]) : null;
-}
-
-function extractDates(text) {
-  const regex =
-    /(\d{4}-\d{2}-\d{2})\s*إلى\s*(\d{4}-\d{2}-\d{2})|(\d{4}-\d{2}-\d{2})\s*-\s*(\d{4}-\d{2}-\d{2})/;
-  const match = text.match(regex);
-
-  if (match) {
-    // Handle both Arabic "to" and hyphen formats
-    const start = match[1] || match[3];
-    const end = match[2] || match[4];
-    return { start, end };
-  }
-  return null;
-}
-function parseDatesFromText(text) {
-  // ISO format
-  const isoRegex = /(\d{4}-\d{2}-\d{2})\s*إلى\s*(\d{4}-\d{2}-\d{2})/;
-  const isoMatch = text.match(isoRegex);
-  if (isoMatch) return { start: isoMatch[1], end: isoMatch[2] };
-
-  // Natural language format
-  const naturalRegex = /(\d{1,2}\s+\S+)\s+إلى\s+(\d{1,2}\s+\S+)/;
-  const naturalMatch = text.match(naturalRegex);
-  if (naturalMatch) {
-    const startDate = parseArabicDate(naturalMatch[1]);
-    const endDate = parseArabicDate(naturalMatch[2]);
-    if (startDate && endDate) {
-      return {
-        start: formatDate(startDate),
-        end: formatDate(endDate),
-      };
-    }
-  }
-
-  return null;
-}
-
-function extractBuildingId(text) {
-  const buildings = {
-    عوقد: "awqad_north",
-    وادي: "alwadi",
-    وسطى: "salalah_central",
-    سوق: "hay_tijari",
-    سعادة: "sadaa",
-    "سعادة 2": "sadaa_2",
-  };
-
-  for (const [keyword, id] of Object.entries(buildings)) {
-    if (text.includes(keyword)) return id;
-  }
-  // Check conversation history
-  for (const msg of [...history].reverse()) {
-    if (msg.role === "user") {
-      for (const [keyword, id] of Object.entries(buildingKeywords)) {
-        if (msg.content?.includes(keyword)) return id;
-      }
-    }
-  }
-
-  return null;
-}
-
-function confirmationMessage(state) {
-  return `هل هذا صحيح؟ 
-عدد الأشخاص: ${state.people} 
-التواريخ: من ${state.dates.start} إلى ${state.dates.end}
-المنطقة: ${state.building}
-السعر: <PRICE_CHECK:${state.building}:${state.unitType}:${state.dates.start}:${state.dates.end}>`;
-}
-
-function getUnitType(people) {
-  if (people <= 2) return "1_room";
-  if (people <= 4) return "2_rooms";
-  if (people <= 6) return "3_rooms";
-  return "7_room_villa";
 }
