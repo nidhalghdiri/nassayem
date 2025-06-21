@@ -20,7 +20,7 @@ const openai = new OpenAI({
 
 export async function POST(request) {
   try {
-    let waId, message, customerName, isSystemMessage;
+    let waId, message, customerName, isSystemMessage, sanitizedMessage;
 
     // const { waId, message, customerName, isSystemMessage } =
     //   await request.json();
@@ -33,8 +33,11 @@ export async function POST(request) {
       customerName,
       isSystemMessage,
     });
-
-    const sanitizedMessage = message?.toString().trim() || "(empty message)";
+    if (body.transcription) {
+      sanitizedMessage = body.transcription;
+    } else {
+      sanitizedMessage = message?.toString().trim() || "(empty message)";
+    }
     console.log("[OPENAI] sanitizedMessage: ", sanitizedMessage);
 
     if (!waId || !message) {

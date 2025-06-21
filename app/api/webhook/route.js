@@ -19,6 +19,7 @@ export async function POST(request) {
     const contact = contacts[0];
     const message = messages[0];
     console.log("Message Received: ", message);
+
     const waId = contact.wa_id;
     const customerName = contact.profile.name;
     const messageText = message.text?.body || "[Media]";
@@ -57,6 +58,34 @@ export async function POST(request) {
     });
 
     console.log(`Saved message from ${waId}: ${messageText}`);
+
+    // Handle voice messages
+    if (message?.audio?.voice) {
+      const audio = message?.audio;
+      const result = await processAudioMessage(waId, audio);
+      console.log("Transcripted Text Message: ", result);
+
+      // Forward to OpenAI handler
+      const openaiResponse = await fetch(
+        `${process.env.NEXTAUTH_URL}/api/openai`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            waId,
+            transcription: result.text,
+            isVoice: true,
+          }),
+        }
+      );
+
+      if (!openaiResponse.ok) {
+        console.error(
+          "Failed to generate AI response for Audio:",
+          await openaiResponse
+        );
+      }
+    }
 
     // Generate AI response for text messages only
     if (message.text?.body) {
