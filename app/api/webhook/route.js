@@ -1,5 +1,6 @@
 import { doc, setDoc, collection, addDoc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { processAudioMessage } from "@/lib/audioService";
 
 export async function POST(request) {
   try {
@@ -17,10 +18,11 @@ export async function POST(request) {
 
     const contact = contacts[0];
     const message = messages[0];
+    console.log("Message Received: ", message);
     const waId = contact.wa_id;
     const customerName = contact.profile.name;
     const messageText = message.text?.body || "[Media]";
-    const messageTimestamp = parseInt(message.timestamp) * 1000; // Convert to milliseconds
+    const messageTimestamp = parseInt(message.timestamp) * 1000;
 
     // Save conversation document
     const convRef = doc(db, "conversations", waId);
