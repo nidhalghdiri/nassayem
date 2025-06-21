@@ -25,19 +25,16 @@ export async function POST(request) {
     // const { waId, message, customerName, isSystemMessage } =
     //   await request.json();
     const body = await request.json();
-    ({ waId, message, customerName, isSystemMessage } = body);
+    ({ waId, message, customerName, isSystemMessage, isVoice = false } = body);
 
     console.log("[OPENAI] Body: ", {
       waId,
       message,
       customerName,
       isSystemMessage,
+      isVoice,
     });
-    if (body.transcription) {
-      sanitizedMessage = body.transcription;
-    } else {
-      sanitizedMessage = message?.toString().trim() || "(empty message)";
-    }
+    sanitizedMessage = message?.toString().trim() || "(empty message)";
     console.log("[OPENAI] sanitizedMessage: ", sanitizedMessage);
 
     if (!waId || !message) {

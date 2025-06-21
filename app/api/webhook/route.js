@@ -73,7 +73,7 @@ export async function POST(request) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             waId,
-            transcription: result.text,
+            message: result.text,
             isVoice: true,
           }),
         }
