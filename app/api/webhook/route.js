@@ -18,6 +18,7 @@ export async function POST(request) {
 
     const contact = contacts[0];
     const message = messages[0];
+    console.log("Contact Received: ", contact);
     console.log("Message Received: ", message);
 
     const waId = contact.wa_id;

@@ -18,11 +18,10 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+let waId, message, customerName, isSystemMessage, sanitizedMessage;
+let conversationHistory = []; // Initialize as empty array
 export async function POST(request) {
   try {
-    let waId, message, customerName, isSystemMessage, sanitizedMessage;
-    let conversationHistory = []; // Initialize as empty array
-
     // const { waId, message, customerName, isSystemMessage } =
     //   await request.json();
     const body = await request.json();
