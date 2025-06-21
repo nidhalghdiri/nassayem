@@ -74,15 +74,23 @@ export async function POST(request) {
           body: JSON.stringify({
             waId,
             message: result.text,
+            customerName,
             isVoice: true,
           }),
         }
       );
 
+      const responseData = await openaiResponse.json();
+
       if (!openaiResponse.ok) {
         console.error(
           "Failed to generate AI response for Audio:",
-          await openaiResponse
+          responseData
+        );
+        // Send fallback message to user
+        await sendWhatsAppMessage(
+          waId,
+          "عذرًا، حدث خطأ في معالجة رسالتك. يرجى المحاولة مرة أخرى"
         );
       }
     }

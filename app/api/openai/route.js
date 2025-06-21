@@ -21,11 +21,18 @@ const openai = new OpenAI({
 export async function POST(request) {
   try {
     let waId, message, customerName, isSystemMessage, sanitizedMessage;
+    let conversationHistory = []; // Initialize as empty array
 
     // const { waId, message, customerName, isSystemMessage } =
     //   await request.json();
     const body = await request.json();
-    ({ waId, message, customerName, isSystemMessage, isVoice = false } = body);
+    ({
+      waId = null,
+      message = "",
+      customerName = "",
+      isSystemMessage = false,
+      isVoice = false,
+    } = body);
 
     console.log("[OPENAI] Body: ", {
       waId,
@@ -34,7 +41,7 @@ export async function POST(request) {
       isSystemMessage,
       isVoice,
     });
-    sanitizedMessage = message?.toString().trim() || "(empty message)";
+    sanitizedMessage = (message || "").toString().trim() || "(empty message)";
     console.log("[OPENAI] sanitizedMessage: ", sanitizedMessage);
 
     if (!waId || !message) {
@@ -73,7 +80,6 @@ export async function POST(request) {
     const snapshot = await getDocs(q);
 
     // Prepare conversation history for AI
-    const conversationHistory = [];
     snapshot.forEach((doc) => {
       const msg = doc.data();
       conversationHistory.push({
@@ -270,14 +276,12 @@ export async function POST(request) {
     );
   } catch (error) {
     console.error("OpenAI API error details:", {
-      message: error.message,
-      status: error.status,
-      response: error.response?.data,
-      stack: error.stack,
-      // Safely handle variables that might not exist
+      errorMessage: error.message,
+      // Use safely accessed variables
       waId: waId || "undefined",
       message: message || "undefined",
-      sanitizedMessage: message?.toString().trim() || "undefined",
+      sanitizedMessage: sanitizedMessage || "undefined",
+      conversationHistoryLength: conversationHistory.length,
     });
 
     return new Response(
@@ -285,15 +289,9 @@ export async function POST(request) {
         error: "Error processing request",
         details: error.message,
         requestData: {
-          // For debugging
           waId: waId || "n/a",
-          message: sanitizedMessage,
           message: message || "n/a",
-          sanitizedMessage: message?.toString().trim() || "n/a",
-          conversationHistory: conversationHistory.map((m) => ({
-            role: m.role,
-            content: m.content?.length || 0,
-          })),
+          sanitizedMessage: sanitizedMessage || "n/a",
         },
       }),
       { status: 500, headers: { "Content-Type": "application/json" } }
