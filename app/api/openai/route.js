@@ -30,7 +30,6 @@ export async function POST(request) {
       message = "",
       customerName = "",
       isSystemMessage = false,
-      isVoice = false,
     } = body);
 
     console.log("[OPENAI] Body: ", {
@@ -38,7 +37,6 @@ export async function POST(request) {
       message,
       customerName,
       isSystemMessage,
-      isVoice,
     });
     sanitizedMessage = (message || "").toString().trim() || "(empty message)";
     console.log("[OPENAI] sanitizedMessage: ", sanitizedMessage);
