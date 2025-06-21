@@ -67,7 +67,7 @@ export async function POST(request) {
 
       // Forward to OpenAI handler
       const openaiResponse = await fetch(
-        `${process.env.NEXTAUTH_URL}/api/openai`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/openai`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
