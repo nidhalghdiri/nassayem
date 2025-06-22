@@ -79,6 +79,14 @@ export async function POST(request) {
 
         case "contact":
           console.log("MEdia Type Contact ", media);
+          const contact = media.contact;
+          const contactType = media.contact_type;
+          const language = media.language || "en";
+
+          const contactName = contact?.name || {};
+          const contactAddress = contact?.addresses?.[0] || {};
+          const defaultName =
+            contactType === "call_center" ? "Call Center" : "Receptionist";
           payload = {
             messaging_product: "whatsapp",
             recipient_type: "individual",
@@ -88,52 +96,44 @@ export async function POST(request) {
               {
                 name: {
                   formatted_name:
-                    media.contact.name?.formatted_name[media.language] ||
-                    (media.contact_type === "call_center"
-                      ? "Call Center"
-                      : "Receptionist"),
+                    getLocalizedValue(contactName.formatted_name, language) ||
+                    defaultName,
                   first_name:
-                    media.contact.name?.first_name[media.language] || "",
+                    getLocalizedValue(contactName.first_name, language) || "",
                   last_name:
-                    media.contact.name?.last_name[media.language] || "",
+                    getLocalizedValue(contactName.last_name, language) || "",
                 },
-                phones: [
-                  {
-                    phone: media.contact.phones?.[0]?.phone || "",
-                    wa_id: media.contact.phones?.[0]?.phone || "",
-                    type: "WORK",
-                  },
-                ],
+                phones:
+                  contact?.phones?.map((phone) => ({
+                    phone: phone?.phone || "",
+                    wa_id: phone?.wa_id || phone?.phone || "",
+                    type: phone?.type || "WORK",
+                  })) || [],
                 addresses: [
                   {
                     street:
-                      media.contact.addresses?.[0]?.street[media.language] ||
-                      "",
+                      getLocalizedValue(contactAddress.street, language) || "",
                     city:
-                      media.contact.addresses?.[0]?.city[media.language] || "",
+                      getLocalizedValue(contactAddress.city, language) || "",
                     state:
-                      media.contact.addresses?.[0]?.state[media.language] || "",
-                    zip: media.contact.addresses?.[0]?.zip || "",
+                      getLocalizedValue(contactAddress.state, language) || "",
+                    zip: contactAddress?.zip || "",
                     country:
-                      media.contact.addresses?.[0]?.country[media.language] ||
-                      "",
-                    country_code:
-                      media.contact.addresses?.[0]?.country_code || "",
-                    type: media.contact.addresses?.[0]?.type || "",
+                      getLocalizedValue(contactAddress.country, language) || "",
+                    country_code: contactAddress?.country_code || "OM",
+                    type: contactAddress?.type || "WORK",
                   },
                 ],
-                emails: [
-                  {
-                    email: media.contact.emails?.[0]?.email || "",
-                    type: media.contact.emails?.[0]?.type || "",
-                  },
-                ],
-                urls: [
-                  {
-                    url: media.contact.urls?.[0]?.url || "",
-                    type: media.contact.urls?.[0]?.type || "",
-                  },
-                ],
+                emails:
+                  contact?.emails?.map((email) => ({
+                    email: email?.email || "",
+                    type: email?.type || "WORK",
+                  })) || [],
+                urls:
+                  contact?.urls?.map((url) => ({
+                    url: url?.url || "",
+                    type: url?.type || "WORK",
+                  })) || [],
               },
             ],
           };
@@ -307,3 +307,11 @@ const getAbsoluteUrl = (path) => {
   if (path.startsWith("http")) return path;
   return `${process.env.NEXT_PUBLIC_BASE_URL}${path}`;
 };
+function getLocalizedValue(obj, language) {
+  if (!obj) return undefined;
+  if (typeof obj === "string") return obj;
+  if (obj[language]) return obj[language];
+  if (obj["en"]) return obj["en"];
+  if (obj["ar"]) return obj["ar"];
+  return Object.values(obj)[0];
+}
