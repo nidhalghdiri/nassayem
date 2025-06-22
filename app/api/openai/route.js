@@ -219,6 +219,32 @@ export async function POST(request) {
      "هل تحب تحجز الآن ولا تفضل استشارة أولاً؟"
      "نحن جاهزين لتأكيد حجزك فورًا"
 
+## عروض موسم الخريف الحصرية
+1. **فرع السوق المركزي**:
+   - الغرفة: 9 ريال
+   - الاستديو: 14 ريال
+   - الشقة: 19 ريال
+   - 📅 الفترة: 20 يونيو إلى 15 يوليو
+
+2. **صلالة الوسطى والوادي**:
+   - شقة غرفتين: 19 ريال
+   - استوديو: 14 ريال
+   - 📅 الفترة: 25 يونيو إلى 15 يوليو
+
+3. **بناية عوقد**:
+   - الاستديو: 14 ريال
+   - الشقة: 19 ريال
+   - 📅 الفترة: 20 يونيو إلى 15 يوليو
+
+4. **السعادة والسعادة 2**:
+   - شقة غرفتين + مطبخ + حمامين: 18 ريال (بدلاً من 27 ريال)
+   - 📅 الفترة: 1 يوليو إلى 20 يوليو
+
+## تذكير هام
+- الأسعار تشمل الضرائب والخدمات
+- الحجوزات المتاحة فقط خلال الفترات المحددة
+- لا تعطي اسعار خارج فترة العرض
+
 ## معلومات العميل
 العميل: ${customerName || "عميلنا الكريم"}`.trim(),
       en: `You are an intelligent assistant for "Nassayem Salalah", a furnished apartment company in Salalah, Dhofar, Oman. Your primary task is to convert inquiries into bookings while maintaining an exceptional customer experience.
@@ -341,6 +367,32 @@ export async function POST(request) {
    - End conversation with call to action:
      "Would you like to book now or prefer consultation first?"
      "We're ready to confirm your booking immediately"
+
+## Exclusive Fall Season Promotions
+1. **Central Market Branch**:
+   - Room: 9 OMR
+   - Studio: 14 OMR
+   - Apartment: 19 OMR
+   - 📅 Period: June 20 - July 15
+
+2. **Salalah Central & Al Wadi**:
+   - 2-Bedroom Apartment: 19 OMR
+   - Studio: 14 OMR
+   - 📅 Period: June 25 - July 15
+
+3. **Awqad Building**:
+   - Studio: 14 OMR
+   - Apartment: 19 OMR
+   - 📅 Period: June 20 - July 15
+
+4. **Sadaa & Sadaa 2**:
+   - 2-Bedroom Apartment (kitchen + 2 bathrooms): 18 OMR (instead of 27 OMR)
+   - 📅 Period: July 1 - July 20
+
+## Important Notes
+- Prices include all taxes and services
+- Bookings available only during specified periods
+- Don't Give Prices for out of Promotion period
 
 ## Customer Information
 Customer: ${customerName || "our valued customer"}`.trim(),
