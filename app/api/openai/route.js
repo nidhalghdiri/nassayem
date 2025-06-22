@@ -24,7 +24,7 @@ function detectLanguage(text) {
   return "en";
 }
 
-let waId, message, customerName, isSystemMessage, sanitizedMessage;
+let waId, message, customerName, isSystemMessage, sanitizedMessage, language;
 let conversationHistory = []; // Initialize as empty array
 export async function POST(request) {
   try {
@@ -78,7 +78,7 @@ export async function POST(request) {
     }
 
     // Determine language
-    let language = convDoc.exists() ? convDoc.data().language : null;
+    language = convDoc.exists() ? convDoc.data().language : null;
     if (!language) {
       language = detectLanguage(sanitizedMessage);
       await setDoc(
