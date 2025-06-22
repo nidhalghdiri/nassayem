@@ -18,6 +18,12 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Language detection function
+function detectLanguage(text) {
+  if (/[\u0600-\u06FF]/.test(text)) return "ar";
+  return "en";
+}
+
 let waId, message, customerName, isSystemMessage, sanitizedMessage;
 let conversationHistory = []; // Initialize as empty array
 export async function POST(request) {
@@ -71,6 +77,17 @@ export async function POST(request) {
       );
     }
 
+    // Determine language
+    let language = convDoc.exists() ? convDoc.data().language : null;
+    if (!language) {
+      language = detectLanguage(sanitizedMessage);
+      await setDoc(
+        doc(db, "conversations", waId),
+        { language },
+        { merge: true }
+      );
+    }
+
     // Get conversation history
     const messagesRef = collection(db, "conversations", waId, "messages");
     const q = query(messagesRef, orderBy("timestamp", "asc"));
@@ -87,14 +104,8 @@ export async function POST(request) {
 
     // console.log("[OPENAI] conversationHistory: ", conversationHistory);
 
-    // Generate AI response
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content:
-            `أنت مساعد ذكي لشركة "نسائم صلالة" للشقق المفروشة في صلالة، ظفار، عُمان. مهمتك الأساسية هي تحويل الاستفسارات إلى حجوزات مع الحفاظ على تجربة عملاء استثنائية.
+    const systemPrompts = {
+      ar: `أنت مساعد ذكي لشركة "نسائم صلالة" للشقق المفروشة في صلالة، ظفار، عُمان. مهمتك الأساسية هي تحويل الاستفسارات إلى حجوزات مع الحفاظ على تجربة عملاء استثنائية.
 
 ## معلومات أساسية عن الشركة
 - **المناطق المتاحة**: 
@@ -213,6 +224,43 @@ export async function POST(request) {
 
 ## معلومات العميل
 العميل: ${customerName || "عميلنا الكريم"}`.trim(),
+      en: `You are an intelligent assistant for "Nassayem Salalah", a furnished apartment company in Salalah, Dhofar, Oman. Your primary task is to convert inquiries into bookings while maintaining an exceptional customer experience.
+
+      ## Company Background
+      - **Available Areas**:
+        1. Awqad North Building (next to Salalah Mall)
+          - ID: "awqad_north"
+          - Description: Strategically located next to Salalah Mall with stunning city views
+        2. Al Wadi Building (opposite Chinese Village)
+          - ID: "alwadi"
+          - Description: Central location near Gardens Mall and restaurants
+        [Add other locations in English]...
+      
+      ## How to Send Advanced Content
+      1. **Images**: Use <GALLERY:building_id>
+      2. **Locations**: Use <LOCATION:building_id>
+      3. **Contacts**: Use <CONTACT:building_id:contact_type>
+      
+      ## Critical Policies
+      1. **Fall Season (June-September)**:
+         - Monthly bookings not available
+         - Minimum daily booking: 2 days
+      
+      ## Communication Style
+      1. Use friendly Omani/Gulf dialect for Arabic, professional tone for English
+      2. Start with appropriate greeting: 
+         - Arabic: "السلام عليكم، نسائم صلالة يقدم لكم خدماته"
+         - English: "Hello, Nassayem Salalah at your service"
+      
+      Customer: ${customerName || "our valued customer"}`.trim(),
+    };
+    // Generate AI response
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: systemPrompts[language] || systemPrompts.ar,
         },
         ...conversationHistory.slice(-6).filter((msg) => msg.content),
         {
@@ -325,6 +373,9 @@ async function handleMediaResponse(waId, responseText) {
     // Send video first
     if (building.media.video) {
       const videoUrl = `${process.env.NEXT_PUBLIC_BASE_URL}${building.media.video.url}`;
+      const caption =
+        building.media.video.caption[language] ||
+        building.media.video.caption.ar;
 
       if (building) {
         await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
@@ -336,7 +387,7 @@ async function handleMediaResponse(waId, responseText) {
             media: {
               type: "video",
               url: videoUrl,
-              caption: building.media.video.caption,
+              caption: caption,
             },
           }),
         });
@@ -351,6 +402,7 @@ async function handleMediaResponse(waId, responseText) {
     // Send gallery images
     for (const [index, image] of building.media.gallery.entries()) {
       const imageUrl = `${process.env.NEXT_PUBLIC_BASE_URL}${image.url}`;
+      const caption = image.caption[language] || image.caption.ar;
 
       if (building) {
         await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
@@ -362,7 +414,7 @@ async function handleMediaResponse(waId, responseText) {
             media: {
               type: "image",
               url: imageUrl,
-              caption: image.caption,
+              caption: caption,
             },
           }),
         });
@@ -432,11 +484,10 @@ async function handleMediaResponse(waId, responseText) {
             type: "location",
             latitude: Number(building.location.latitude),
             longitude: Number(building.location.longitude),
-            name: building.name,
+            name: building.name[language] || building.name.ar,
             address:
-              building.location.address?.full_address ||
-              building.location.address?.street ||
-              "Location Address",
+              building.location.address[language] ||
+              building.location.address.full_address,
           },
         }),
       });
@@ -485,7 +536,10 @@ async function handleMediaResponse(waId, responseText) {
         media: {
           type: "contact",
           contact_type: contactType,
-          contact: contact,
+          contact: {
+            ...contact,
+            name: contact.name[language] || contact.name.ar,
+          },
         },
       }),
     });
