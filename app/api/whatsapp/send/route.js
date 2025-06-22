@@ -181,12 +181,14 @@ export async function POST(request) {
                     contact: {
                       name: {
                         formatted_name:
-                          media.contact.name?.formatted_name ||
+                          media.contact.name?.formatted_name[media.language] ||
                           (media.contact_type === "call_center"
                             ? "Call Center"
                             : "Receptionist"),
-                        first_name: media.contact.name?.first_name || "",
-                        last_name: media.contact.name?.last_name || "",
+                        first_name:
+                          media.contact.name?.first_name[media.language] || "",
+                        last_name:
+                          media.contact.name?.last_name[media.language] || "",
                       },
                       phones: [
                         {
@@ -197,11 +199,23 @@ export async function POST(request) {
                       ],
                       addresses: [
                         {
-                          street: media.contact.addresses?.[0]?.street || "",
-                          city: media.contact.addresses?.[0]?.city || "",
-                          state: media.contact.addresses?.[0]?.state || "",
+                          street:
+                            media.contact.addresses?.[0]?.street[
+                              media.language
+                            ] || "",
+                          city:
+                            media.contact.addresses?.[0]?.city[
+                              media.language
+                            ] || "",
+                          state:
+                            media.contact.addresses?.[0]?.state[
+                              media.language
+                            ] || "",
                           zip: media.contact.addresses?.[0]?.zip || "",
-                          country: media.contact.addresses?.[0]?.country || "",
+                          country:
+                            media.contact.addresses?.[0]?.country[
+                              media.language
+                            ] || "",
                           country_code:
                             media.contact.addresses?.[0]?.country_code || "",
                           type: media.contact.addresses?.[0]?.type || "",
