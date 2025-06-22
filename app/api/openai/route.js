@@ -78,15 +78,12 @@ export async function POST(request) {
     }
 
     // Determine language
-    language = convDoc.exists() ? convDoc.data().language : null;
-    if (!language) {
-      language = detectLanguage(sanitizedMessage);
-      await setDoc(
-        doc(db, "conversations", waId),
-        { language },
-        { merge: true }
-      );
-    }
+    // language = convDoc.exists() ? convDoc.data().language : null;
+    // if (!language) {
+    language = detectLanguage(sanitizedMessage);
+    await setDoc(doc(db, "conversations", waId), { language }, { merge: true });
+    console.log("Language Detected: ", language);
+    // }
 
     // Get conversation history
     const messagesRef = collection(db, "conversations", waId, "messages");
@@ -580,7 +577,7 @@ async function handleMediaResponse(waId, responseText) {
             longitude: Number(building.location.longitude),
             name: building.name[language] || building.name.ar,
             address:
-              building.location.address[language] ||
+              building.location.address[language].full_address ||
               building.location.address.full_address,
           },
         }),
@@ -630,10 +627,8 @@ async function handleMediaResponse(waId, responseText) {
         media: {
           type: "contact",
           contact_type: contactType,
-          contact: {
-            ...contact,
-            name: contact.name[language] || contact.name.ar,
-          },
+          language: language,
+          contact: contact,
         },
       }),
     });
