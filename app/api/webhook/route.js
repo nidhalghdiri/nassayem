@@ -80,6 +80,39 @@ export async function POST(request) {
       return new Response("OK (handoff active)", { status: 200 });
     }
 
+    // Add this after voice message handling and before text message handling
+    if (message.type === "button" && message.button?.text) {
+      console.log("Received button interaction:", message.button.text);
+
+      // Forward button text to OpenAI as regular message
+      const convDoc = await getDoc(doc(db, "conversations", waId));
+      if (!convDoc.exists() || !convDoc.data().handoff) {
+        const aiResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/openai`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              waId,
+              message: message.button.text,
+              customerName,
+              isButton: true, // Add this flag
+              // buttonPayload: message.button.payload, // Optional
+            }),
+          }
+        );
+
+        if (!aiResponse.ok) {
+          console.error(
+            "Failed to generate AI response for button:",
+            await aiResponse.text()
+          );
+        }
+      }
+    }
+
     // Handle voice messages
     if (message?.audio?.voice) {
       const audio = message?.audio;
