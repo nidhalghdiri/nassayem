@@ -39,7 +39,6 @@ export async function POST(request) {
     } = body);
 
     if (["المناطق السياحية", "الهدوء العائلي"].includes(message)) {
-      isButton = true;
       message = `[BUTTON CHOICE] ${message}`;
       // console.log("Processing as button choice:", message);
       conversationHistory.unshift({

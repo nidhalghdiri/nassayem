@@ -273,10 +273,10 @@ export async function POST(request) {
           lastMessage: {
             text: media ? "[Media]" : message,
             timestamp: Date.now(),
-            sender: "agent",
+            // sender: "agent",
             isSystemMessage: true,
           },
-          handoff: true, // Keep handoff active when agent sends messages
+          // handoff: true, // Keep handoff active when agent sends messages
           updatedAt: new Date().toISOString(),
         },
         { merge: true }
