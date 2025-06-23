@@ -338,7 +338,7 @@ export default function WhatsAppChat() {
                   <input
                     type="checkbox"
                     checked={handoff}
-                    onChange={() => setHandoff(!handoff)}
+                    onChange={() => toggleHandoff()}
                   />
                   <span className="slider round"></span>
                 </label>
