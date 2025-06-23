@@ -32,10 +32,11 @@ export async function POST(request) {
     const customerName = contact.profile.name;
     const messageText = message.text?.body || "[Media]";
     const messageTimestamp = parseInt(message.timestamp) * 1000;
-    const isHandoff = convDoc.exists() ? convDoc.data().handoff : false;
 
     // Save conversation document
     const convRef = doc(db, "conversations", waId);
+    const convDoc = await getDoc(convRef);
+    const isHandoff = convDoc.exists() ? convDoc.data().handoff : false;
     await setDoc(
       convRef,
       {
