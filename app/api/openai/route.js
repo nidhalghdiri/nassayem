@@ -65,6 +65,7 @@ export async function POST(request) {
     // Check if conversation is in handoff mode
     const convDoc = await getDoc(doc(db, "conversations", waId));
     if (convDoc.exists() && convDoc.data().handoff) {
+      console.log("Handoff active - skipping AI response");
       return new Response(
         JSON.stringify({
           success: true,

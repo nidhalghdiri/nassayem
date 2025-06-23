@@ -276,6 +276,7 @@ export async function POST(request) {
             sender: "agent",
             isSystemMessage: true,
           },
+          handoff: true, // Keep handoff active when agent sends messages
           updatedAt: new Date().toISOString(),
         },
         { merge: true }

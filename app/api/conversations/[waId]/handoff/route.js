@@ -2,23 +2,17 @@ import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export async function POST(request, { params }) {
+  const { waId } = params;
+  const { handoff } = await request.json();
+
   try {
-    const { waId } = params;
-    const { handoff, agentId } = await request.json();
-
-    if (typeof handoff !== "boolean" || !agentId) {
-      return new Response(JSON.stringify({ error: "Invalid request" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
+    const convRef = doc(db, "conversations", waId);
     await setDoc(
-      doc(db, "conversations", waId),
+      convRef,
       {
         handoff,
         handoffInitiatedAt: handoff ? new Date().toISOString() : null,
-        handoffInitiatedBy: handoff ? agentId : null,
+        updatedAt: new Date().toISOString(),
       },
       { merge: true }
     );
@@ -29,9 +23,8 @@ export async function POST(request, { params }) {
     });
   } catch (error) {
     console.error("Handoff error:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
+    return new Response(JSON.stringify({ error: "Internal Server Error" }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
     });
   }
 }

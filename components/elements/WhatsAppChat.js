@@ -129,6 +129,8 @@ export default function WhatsAppChat() {
   };
 
   const toggleHandoff = async () => {
+    const newHandoffState = !handoff;
+    setHandoff(newHandoffState);
     try {
       const response = await fetch(
         `/api/conversations/${selectedContact}/handoff`,
@@ -136,8 +138,7 @@ export default function WhatsAppChat() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            handoff: !handoff,
-            agentId: "12345",
+            handoff: newHandoffState,
           }),
         }
       );
@@ -145,6 +146,8 @@ export default function WhatsAppChat() {
       if (!response.ok) throw new Error("Failed to toggle handoff");
     } catch (error) {
       console.error("Error toggling handoff:", error);
+      // Revert on error
+      setHandoff(!newHandoffState);
     }
   };
 

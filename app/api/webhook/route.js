@@ -11,6 +11,13 @@ export async function POST(request) {
       return new Response("Invalid payload", { status: 400 });
     }
 
+    const value = body.entry[0].changes[0].value;
+
+    // Ignore status updates and non-message events
+    if (value.statuses || !value.messages) {
+      return new Response("Ignoring status update", { status: 200 });
+    }
+
     const { contacts, messages } = body.entry[0].changes[0].value;
     if (!contacts?.[0] || !messages?.[0]) {
       return new Response("Missing contact or message data", { status: 400 });
@@ -25,6 +32,7 @@ export async function POST(request) {
     const customerName = contact.profile.name;
     const messageText = message.text?.body || "[Media]";
     const messageTimestamp = parseInt(message.timestamp) * 1000;
+    const isHandoff = convDoc.exists() ? convDoc.data().handoff : false;
 
     // Save conversation document
     const convRef = doc(db, "conversations", waId);
@@ -40,9 +48,14 @@ export async function POST(request) {
         },
         status: "active",
         updatedAt: new Date().toISOString(),
-        handoff: false, // Default to bot handling
-        handoffInitiatedAt: null,
-        handoffInitiatedBy: null,
+        ...(convDoc.exists() ? { handoff: isHandoff } : { handoff: false }),
+        analysis: {
+          summary: "",
+          status: "pending", // pending/analyzed
+          topic: "",
+          sentiment: "",
+          lastAnalyzedAt: null,
+        },
       },
       { merge: true }
     );
@@ -59,6 +72,12 @@ export async function POST(request) {
     });
 
     console.log(`Saved message from ${waId}: ${messageText}`);
+
+    // Skip AI processing during handoff
+    if (isHandoff) {
+      console.log(`Skipping AI response for ${waId} (handoff active)`);
+      return new Response("OK (handoff active)", { status: 200 });
+    }
 
     // Handle voice messages
     if (message?.audio?.voice) {
@@ -123,6 +142,12 @@ export async function POST(request) {
         }
       }
     }
+
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/analyze/conversation`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ waId }),
+    });
 
     return new Response("OK", { status: 200 });
   } catch (error) {
