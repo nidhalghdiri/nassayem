@@ -423,45 +423,108 @@ input:checked + .slider:before {
 .message.failed .time {
   color: #ff3b30;
 }
-/* Image upload button */
-.image-upload-button {
-  padding: 10px;
-  cursor: pointer;
-  color: #666;
+/* Add to /public/css/whatsapp.css */
+
+/* Media Containers */
+.media-container {
+  margin-top: 10px;
+  border-radius: 10px;
+  overflow: hidden;
+  max-width: 80%;
 }
 
-.image-upload-button:hover {
-  color: #000;
-}
-
-/* Image preview */
-.image-preview {
-  position: absolute;
-  bottom: 60px;
-  left: 10px;
-  background: white;
-  padding: 10px;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-.image-preview img {
-  max-width: 200px;
-  max-height: 200px;
-  margin-bottom: 10px;
-}
-
-/* Media in chat */
 .media-container img {
   max-width: 100%;
-  max-height: 300px;
   border-radius: 8px;
   cursor: pointer;
-  margin-top: 5px;
 }
 
-.media-container p {
-  font-size: 0.8rem;
-  color: #666;
+.video-container video {
+  max-width: 100%;
+  border-radius: 8px;
+  background: #000;
+}
+
+.media-caption {
   margin-top: 5px;
+  font-size: 0.9em;
+  color: #666;
+}
+
+/* Contact Card */
+.contact-container {
+  background: #f5f5f5;
+  border-radius: 10px;
+  padding: 12px;
+  max-width: 300px;
+}
+
+.contact-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.contact-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.contact-icon {
+  margin-right: 10px;
+  font-size: 1.2em;
+}
+
+.contact-name {
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+.contact-details {
+  padding-left: 28px;
+}
+
+.contact-phone {
+  display: flex;
+  align-items: center;
+  margin: 5px 0;
+}
+
+.phone-icon {
+  margin-right: 8px;
+  color: #25d366;
+}
+
+.phone-type {
+  font-size: 0.8em;
+  color: #666;
+  margin-left: 5px;
+}
+
+/* Location Card */
+.location-container {
+  background: #f5f5f5;
+  border-radius: 10px;
+  padding: 12px;
+  max-width: 300px;
+}
+
+.location-link {
+  display: flex;
+  align-items: center;
+  color: #128c7e;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.location-icon {
+  margin-right: 8px;
+  color: #f44336;
+}
+
+.location-address {
+  margin-top: 5px;
+  font-size: 0.9em;
+  color: #666;
+  padding-left: 24px;
 }

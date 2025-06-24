@@ -167,14 +167,14 @@ export async function POST(request) {
         ? {
             media: {
               type: media.type,
-              ...(media.type === "image"
-                ? { url: media.url, caption: media.caption }
+              ...(media.type === "image" || media.type === "video"
+                ? { url: media.url, caption: media.caption || "" }
                 : media.type === "location"
                 ? {
                     latitude: media.latitude,
                     longitude: media.longitude,
-                    name: media.name,
-                    address: media.address,
+                    name: media.name || "Location",
+                    address: media.address || "",
                   }
                 : media.type === "contact"
                 ? {

@@ -21,6 +21,9 @@ import {
   FiCheck,
   FiClock,
   FiImage,
+  FiVideo,
+  FiPhone,
+  FiMapPin,
 } from "react-icons/fi";
 import "/public/css/whatsapp.css";
 
@@ -43,6 +46,7 @@ export default function WhatsAppChat() {
       snapshot.forEach((doc) => {
         const data = doc.data();
         list.push({ id: doc.id, ...data });
+        setHandoff(data.handoff || false);
       });
 
       // Sort conversations by last message timestamp (newest first)
@@ -79,7 +83,6 @@ export default function WhatsAppChat() {
         snapshot.forEach((doc) => {
           if (doc.exists()) {
             list.push({ id: doc.id, ...doc.data() });
-            setHandoff(doc.data().handoff || false);
           }
         });
         setMessages(list);
@@ -252,6 +255,89 @@ export default function WhatsAppChat() {
     acc[date].push(message);
     return acc;
   }, {});
+
+  // Render contact info
+  const renderContact = (contact) => {
+    if (!contact) return null;
+    const name = contact.name?.formatted_name || "Contact";
+    const primaryPhone = contact.phones?.[0]?.phone || "";
+    return (
+      <div className="contact-card">
+        <div className="contact-header">
+          <FiUser className="contact-icon" />
+          <div className="contact-name">{name}</div>
+        </div>
+        <div className="contact-details">
+          {contact.phones?.map((phone, index) => (
+            <div key={index} className="contact-phone">
+              <FiPhone className="phone-icon" />
+              <a href={`tel:${phone.phone}`}>{phone.phone}</a>
+              {phone.type && <span className="phone-type">({phone.type})</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Render media based on type
+  const renderMedia = (media) => {
+    if (!media) return null;
+
+    switch (media.type) {
+      case "video":
+        return (
+          <div className="media-container video-container">
+            <video controls width="100%">
+              <source src={media.url} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+            {media.caption && <p className="media-caption">{media.caption}</p>}
+          </div>
+        );
+
+      case "contact":
+        return (
+          <div className="media-container contact-container">
+            {renderContact(media.contact)}
+          </div>
+        );
+
+      case "location":
+        return (
+          <div className="media-container location-container">
+            <a
+              href={`https://www.google.com/maps?q=${media.latitude},${media.longitude}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="location-link"
+            >
+              <FiMapPin className="location-icon" />
+              <span>{media.name || "Location"}</span>
+            </a>
+            {media.address && (
+              <div className="location-address">{media.address}</div>
+            )}
+          </div>
+        );
+
+      case "image":
+        return (
+          <div className="media-container">
+            <img
+              src={media.url}
+              alt={media.caption}
+              onClick={() => window.open(media.url, "_blank")}
+            />
+            {media.caption && <p className="media-caption">{media.caption}</p>}
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="whatsapp-container">
       {/* Mobile Header */}
@@ -359,16 +445,7 @@ export default function WhatsAppChat() {
                 >
                   <div className="message-content">
                     {msg.text && <p>{msg.text}</p>}
-                    {msg.media?.type === "image" && (
-                      <div className="media-container">
-                        <img
-                          src={msg.media.url}
-                          alt={msg.media.caption}
-                          onClick={() => window.open(msg.media.url, "_blank")}
-                        />
-                        {msg.media.caption && <p>{msg.media.caption}</p>}
-                      </div>
-                    )}
+                    {msg.media && renderMedia(msg.media)}
                     <div className="message-footer">
                       <span className="time">{formatTime(msg.timestamp)}</span>
                       {msg.sender !== "customer" && (
@@ -395,17 +472,6 @@ export default function WhatsAppChat() {
             <form onSubmit={sendMessage} className="message-input">
               <div className="chat-input">
                 <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  style={{ display: "none" }}
-                  id="image-upload"
-                />
-                <label htmlFor="image-upload" className="image-upload-button">
-                  <FiImage size={20} />
-                </label>
-
-                <input
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -420,19 +486,6 @@ export default function WhatsAppChat() {
                     <FiSend size={20} />
                   )}
                 </button>
-
-                {selectedFile && (
-                  <div className="image-preview">
-                    <img
-                      src={URL.createObjectURL(selectedFile)}
-                      alt="Preview"
-                    />
-                    <button onClick={uploadImage}>Send Image</button>
-                    <button onClick={() => setSelectedFile(null)}>
-                      Cancel
-                    </button>
-                  </div>
-                )}
               </div>
             </form>
           </>
