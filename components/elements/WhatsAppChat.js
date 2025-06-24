@@ -24,6 +24,7 @@ import {
   FiVideo,
   FiPhone,
   FiMapPin,
+  FiInfo,
 } from "react-icons/fi";
 import "/public/css/whatsapp.css";
 
