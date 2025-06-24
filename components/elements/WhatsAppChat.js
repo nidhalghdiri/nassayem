@@ -422,10 +422,20 @@ export default function WhatsAppChat() {
                       ? formatTime(conv.lastMessage.timestamp)
                       : ""}
                   </span>
+                  {conv.analysis?.sentiment && (
+                    <span
+                      className={`sentiment-dot ${conv.analysis.sentiment}`}
+                    />
+                  )}
                 </div>
                 <p className="last-message">
                   {conv.lastMessage?.text.slice(0, 30)}...
                 </p>
+                {conv.analysis?.topic && (
+                  <div className="conversation-topic">
+                    {conv.analysis.topic}
+                  </div>
+                )}
                 {conv.lastMessage?.sender === "customer" &&
                   !conv.lastMessage?.read && (
                     <span className="unread-badge"></span>
@@ -453,6 +463,30 @@ export default function WhatsAppChat() {
                   <p className="status">
                     {handoff ? "Agent handling" : "Bot handling"}
                   </p>
+                </div>
+              </div>
+              <div className="conversation-analysis">
+                <div className="analysis-tags">
+                  <span
+                    className={`sentiment-tag ${
+                      selectedConversation?.analysis?.sentiment || "neutral"
+                    }`}
+                  >
+                    {selectedConversation?.analysis?.sentiment || "Neutral"}
+                  </span>
+                  <span className="topic-tag">
+                    {selectedConversation?.analysis?.topic || "General Inquiry"}
+                  </span>
+                </div>
+                <div className="summary-tooltip">
+                  <FiInfo className="info-icon" />
+                  <div className="summary-content">
+                    <h4>Conversation Summary</h4>
+                    <p>
+                      {conversations.find((c) => c.id === selectedContact)
+                        ?.analysis?.summary || "No summary available yet"}
+                    </p>
+                  </div>
                 </div>
               </div>
               <div className="handoff-toggle">

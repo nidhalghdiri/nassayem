@@ -304,10 +304,15 @@ input:checked + .slider:before {
 
 /* Message Input */
 .message-input {
+  width: 100%;
   display: flex;
   padding: 12px 16px;
   background-color: #f0f2f5;
   border-top: 1px solid #e9edef;
+}
+.message-input .chat-input {
+  width: 100%;
+  display: flex;
 }
 
 .message-input input {
@@ -527,4 +532,117 @@ input:checked + .slider:before {
   font-size: 0.9em;
   color: #666;
   padding-left: 24px;
+}
+
+/* Conversation Analysis Styles */
+.conversation-analysis {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.analysis-tags {
+  display: flex;
+  gap: 6px;
+}
+
+.sentiment-tag {
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.sentiment-tag.positive {
+  background-color: #e6f7ee;
+  color: #0a8a5a;
+}
+
+.sentiment-tag.neutral {
+  background-color: #f0f0f0;
+  color: #666;
+}
+
+.sentiment-tag.negative {
+  background-color: #feeceb;
+  color: #d93025;
+}
+
+.topic-tag {
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  background-color: #e6f2ff;
+  color: #1a73e8;
+}
+
+.summary-tooltip {
+  position: relative;
+  cursor: pointer;
+}
+
+.summary-tooltip .info-icon {
+  color: #5f6368;
+}
+
+.summary-tooltip .summary-content {
+  display: none;
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 250px;
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.summary-tooltip:hover .summary-content {
+  display: block;
+}
+
+.summary-content h4 {
+  margin: 0 0 8px 0;
+  font-size: 0.9rem;
+  color: #202124;
+}
+
+.summary-content p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #5f6368;
+  line-height: 1.4;
+}
+
+/* Sidebar Item Styles */
+.sentiment-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-left: 6px;
+}
+
+.sentiment-dot.positive {
+  background-color: #0a8a5a;
+}
+
+.sentiment-dot.neutral {
+  background-color: #666;
+}
+
+.sentiment-dot.negative {
+  background-color: #d93025;
+}
+
+.conversation-topic {
+  font-size: 0.75rem;
+  color: #5f6368;
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
