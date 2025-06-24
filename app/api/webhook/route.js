@@ -30,7 +30,7 @@ export async function POST(request) {
 
     const waId = contact.wa_id;
     const customerName = contact.profile.name;
-    const messageText = message.text?.body || "[Media]";
+    let messageText = message.text?.body || "[Media]";
     const messageTimestamp = parseInt(message.timestamp) * 1000;
 
     // Save conversation document
@@ -61,17 +61,6 @@ export async function POST(request) {
       { merge: true }
     );
 
-    // Save individual message
-    const messagesRef = collection(db, "conversations", waId, "messages");
-    await addDoc(messagesRef, {
-      text: messageText,
-      sender: "customer",
-      timestamp: messageTimestamp,
-      platform: "whatsapp",
-      read: false,
-      status: "delivered",
-    });
-
     console.log(`Saved message from ${waId}: ${messageText}`);
 
     // Skip AI processing during handoff
@@ -79,6 +68,15 @@ export async function POST(request) {
       console.log(`Skipping AI response for ${waId} (handoff active)`);
       return new Response("OK (handoff active)", { status: 200 });
     }
+
+    var messageObj = {
+      text: messageText,
+      sender: "customer",
+      timestamp: messageTimestamp,
+      platform: "whatsapp",
+      read: false,
+      status: "delivered",
+    };
 
     // Add this after voice message handling and before text message handling
     if (message.type === "button" && message.button?.text) {
@@ -118,6 +116,12 @@ export async function POST(request) {
       const audio = message?.audio;
       const result = await processAudioMessage(waId, audio);
       console.log("Transcripted Text Message: ", result);
+
+      messageObj = {
+        ...messageObj,
+        mediaType: "audio",
+        audioUrl: result.audioUrl,
+      };
 
       // Forward to OpenAI handler
       const openaiResponse = await fetch(
@@ -176,6 +180,10 @@ export async function POST(request) {
         }
       }
     }
+
+    // Save individual message
+    const messagesRef = collection(db, "conversations", waId, "messages");
+    await addDoc(messagesRef, messageObj);
 
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/analyze/conversation`, {
       method: "POST",

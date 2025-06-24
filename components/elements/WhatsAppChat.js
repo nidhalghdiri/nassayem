@@ -393,9 +393,21 @@ export default function WhatsAppChat() {
       </div>
 
       {/* Sidebar */}
+      {/* Sidebar */}
       <div className={`sidebar ${mobileMenuOpen ? "open" : ""}`}>
         <div className="sidebar-header">
           <h2>Conversations</h2>
+          <div className="sidebar-legend">
+            <span className="legend-item">
+              <span className="sentiment-icon positive">😊</span> Positive
+            </span>
+            <span className="legend-item">
+              <span className="sentiment-icon neutral">😐</span> Neutral
+            </span>
+            <span className="legend-item">
+              <span className="sentiment-icon negative">😠</span> Negative
+            </span>
+          </div>
         </div>
         <div className="conversation-list">
           {conversations.map((conv) => (
@@ -422,17 +434,21 @@ export default function WhatsAppChat() {
                   </span>
                   {conv.analysis?.sentiment && (
                     <span
-                      className={`sentiment-dot ${conv.analysis.sentiment}`}
-                    />
+                      className={`sentiment-icon ${conv.analysis.sentiment}`}
+                    >
+                      {conv.analysis.sentiment === "positive"
+                        ? "😊"
+                        : conv.analysis.sentiment === "negative"
+                        ? "😠"
+                        : "😐"}
+                    </span>
                   )}
                 </div>
                 <p className="last-message">
                   {conv.lastMessage?.text.slice(0, 30)}...
                 </p>
                 {conv.analysis?.topic && (
-                  <div className="conversation-topic">
-                    {conv.analysis.topic}
-                  </div>
+                  <div className={`topic-badge`}>{conv.analysis.topic}</div>
                 )}
                 {conv.lastMessage?.sender === "customer" &&
                   !conv.lastMessage?.read && (
@@ -515,7 +531,12 @@ export default function WhatsAppChat() {
                   className={`message ${msg.sender} ${msg.status || ""}`}
                 >
                   <div className="message-content">
-                    {msg.text && <p>{msg.text}</p>}
+                    {msg.mediaType == "audio" ? (
+                      <AudioMessage waId={selectedContact} messageId={msg.id} />
+                    ) : (
+                      msg.text && <p>{msg.text}</p>
+                    )}
+
                     {msg.media && renderMedia(msg.media)}
                     <div className="message-footer">
                       <span className="time">{formatTime(msg.timestamp)}</span>
