@@ -460,7 +460,9 @@ export default function WhatsAppChat() {
           ))}
         </div>
       </div>
-
+      {mobileMenuOpen && (
+        <div className="sidebar-overlay" onClick={toggleMobileMenu} />
+      )}
       {/* Chat Area */}
       <div className="chat-area">
         {selectedContact ? (

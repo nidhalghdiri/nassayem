@@ -1,7 +1,7 @@
 /* Main Container */
 .whatsapp-container {
   display: flex;
-  height: 100vh;
+  /* height: 100vh; */
   background-color: #f0f2f5;
   position: relative;
   overflow: hidden;
@@ -35,9 +35,35 @@
 
 /* Sidebar */
 .sidebar {
-  width: 320px; /* Fixed width for consistency */
+  width: 320px;
   border-right: 1px solid #d1d7db;
   background: #f7f8fa;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 90;
+  transition: transform 0.3s ease;
+  transform: translateX(-100%);
+}
+.sidebar.open {
+  transform: translateX(0);
+  box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
+}
+/* Add overlay when sidebar is open */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 80;
+  display: none;
+}
+
+.sidebar.open + .sidebar-overlay {
+  display: block;
 }
 /* Sidebar Header */
 .sidebar-header {
@@ -66,7 +92,8 @@
 }
 
 .conversation-list {
-  height: calc(100vh - 70px); /* Account for header */
+  /* height: calc(100vh - 70px); */
+  height: 100vh;
   overflow-y: auto;
 }
 /* Conversation Items */
@@ -368,17 +395,20 @@ input:checked + .slider:before {
 } */
 
 .message.customer .message-content {
+  padding: 8px 6px;
   background: white;
   border-radius: 0 8px 8px 8px;
   box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
 }
 
 .message.agent .message-content {
+  padding: 8px 6px;
   background: #d9fdd3;
   border-radius: 8px 0 8px 8px;
 }
 
 .message.bot .message-content {
+  padding: 8px 6px;
   background-color: #e5e5ea;
   border-top-right-radius: 0;
 }
@@ -493,9 +523,14 @@ input:checked + .slider:before {
     display: flex;
   }
 
+  .chat-area {
+    margin-top: 56px;
+    height: calc(100vh - 56px);
+  }
+
   .sidebar {
     width: 85%;
-    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
+    max-width: 320px;
   }
 
   .chat-header {
@@ -504,15 +539,6 @@ input:checked + .slider:before {
 
   .message {
     max-width: 85%;
-  }
-
-  .sidebar.open {
-    transform: translateX(0);
-  }
-
-  .chat-area {
-    margin-top: 56px;
-    height: calc(100vh - 56px);
   }
 
   .no-chat-selected {
@@ -697,7 +723,7 @@ input:checked + .slider:before {
 .summary-tooltip .summary-content {
   display: none;
   position: absolute;
-  bottom: 100%;
+  top: 100%;
   left: 50%;
   transform: translateX(-50%);
   width: 250px;
