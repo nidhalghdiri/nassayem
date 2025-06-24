@@ -107,10 +107,7 @@ export default function WhatsAppChat() {
     const unsubscribe = onSnapshot(convRef, (doc) => {
       if (doc.exists()) {
         const data = doc.data();
-        if (data.handoff !== handoff) {
-          console.log("[HANDOFF] Updating from Firestore: ", data.handoff);
-          setHandoff(data.handoff || false);
-        }
+        setHandoff(data.handoff || false);
       }
     });
 
@@ -154,11 +151,11 @@ export default function WhatsAppChat() {
 
   const toggleHandoff = async () => {
     if (!selectedContact) return;
-    console.log("[HANDOFF] toggleHandoff Old:  ", handoff);
-    const newHandoffState = !handoff;
-    console.log("[HANDOFF] toggleHandoff New:  ", newHandoffState);
 
     try {
+      console.log("[HANDOFF] toggleHandoff Old:  ", handoff);
+      const newHandoffState = !handoff;
+      console.log("[HANDOFF] toggleHandoff New:  ", newHandoffState);
       // Optimistically update UI
       // setHandoff(newHandoffState);
       // const response = await fetch(
@@ -469,13 +466,16 @@ export default function WhatsAppChat() {
                 <div className="analysis-tags">
                   <span
                     className={`sentiment-tag ${
-                      selectedConversation?.analysis?.sentiment || "neutral"
+                      conversations.find((c) => c.id === selectedContact)
+                        ?.analysis?.sentiment || "neutral"
                     }`}
                   >
-                    {selectedConversation?.analysis?.sentiment || "Neutral"}
+                    {conversations.find((c) => c.id === selectedContact)
+                      ?.analysis?.sentiment || "Neutral"}
                   </span>
                   <span className="topic-tag">
-                    {selectedConversation?.analysis?.topic || "General Inquiry"}
+                    {conversations.find((c) => c.id === selectedContact)
+                      ?.analysis?.topic || "General Inquiry"}
                   </span>
                 </div>
                 <div className="summary-tooltip">
