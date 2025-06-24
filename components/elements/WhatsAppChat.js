@@ -46,7 +46,10 @@ export default function WhatsAppChat() {
       snapshot.forEach((doc) => {
         const data = doc.data();
         list.push({ id: doc.id, ...data });
-        setHandoff(data.handoff || false);
+        // Only update handoff if this is the selected conversation
+        if (doc.id === selectedContact) {
+          setHandoff(data.handoff || false);
+        }
       });
 
       // Sort conversations by last message timestamp (newest first)
@@ -58,6 +61,7 @@ export default function WhatsAppChat() {
       setConversations(list);
       if (list.length > 0 && !selectedContact) {
         setSelectedContact(list[0].id);
+        setHandoff(list[0].handoff || false); // Initialize handoff state
       }
     });
 
@@ -78,6 +82,7 @@ export default function WhatsAppChat() {
     let debounceTimer;
     const unsubscribe = onSnapshot(q, (snapshot) => {
       clearTimeout(debounceTimer);
+
       debounceTimer = setTimeout(() => {
         const list = [];
         snapshot.forEach((doc) => {
@@ -94,6 +99,20 @@ export default function WhatsAppChat() {
       clearTimeout(debounceTimer);
       unsubscribe();
     };
+  }, [selectedContact]);
+
+  useEffect(() => {
+    if (!selectedContact) return;
+
+    const convRef = doc(db, "conversations", selectedContact);
+    const unsubscribe = onSnapshot(convRef, (doc) => {
+      if (doc.exists()) {
+        const data = doc.data();
+        setHandoff(data.handoff || false);
+      }
+    });
+
+    return () => unsubscribe();
   }, [selectedContact]);
 
   const handleFileChange = (e) => {
@@ -132,18 +151,31 @@ export default function WhatsAppChat() {
   };
 
   const toggleHandoff = async () => {
+    if (!selectedContact) return;
+
     const newHandoffState = !handoff;
-    setHandoff(newHandoffState);
     try {
-      const response = await fetch(
-        `/api/conversations/${selectedContact}/handoff`,
+      // Optimistically update UI
+      setHandoff(newHandoffState);
+      // const response = await fetch(
+      //   `/api/conversations/${selectedContact}/handoff`,
+      //   {
+      //     method: "POST",
+      //     headers: { "Content-Type": "application/json" },
+      //     body: JSON.stringify({
+      //       handoff: newHandoffState,
+      //     }),
+      //   }
+      // );
+      const convRef = doc(db, "conversations", selectedContact);
+      await setDoc(
+        convRef,
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            handoff: newHandoffState,
-          }),
-        }
+          handoff: newHandoffState,
+          handoffInitiatedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
       );
 
       if (!response.ok) throw new Error("Failed to toggle handoff");

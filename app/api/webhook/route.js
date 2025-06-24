@@ -49,7 +49,7 @@ export async function POST(request) {
         },
         status: "active",
         updatedAt: new Date().toISOString(),
-        ...(convDoc.exists() ? { handoff: isHandoff } : { handoff: false }),
+        handoff: isHandoff,
         analysis: {
           summary: "",
           status: "pending", // pending/analyzed
