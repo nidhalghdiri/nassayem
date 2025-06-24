@@ -34,6 +34,11 @@
 }
 
 /* Sidebar */
+.sidebar {
+  width: 320px; /* Fixed width for consistency */
+  border-right: 1px solid #d1d7db;
+  background: #f7f8fa;
+}
 /* Sidebar Header */
 .sidebar-header {
   padding: 15px;
@@ -60,6 +65,10 @@
   gap: 4px;
 }
 
+.conversation-list {
+  height: calc(100vh - 70px); /* Account for header */
+  overflow-y: auto;
+}
 /* Conversation Items */
 .conversation-item {
   padding: 12px 15px;
@@ -73,7 +82,7 @@
 }
 
 .conversation-item.active {
-  background-color: #e8f0fe;
+  background: #e6f4ff; /* Lighter blue for active state */
 }
 
 /* Topic Badges */
@@ -123,8 +132,8 @@
 
 /* Avatar */
 .avatar {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background-color: #e0e0e0;
   display: flex;
@@ -234,17 +243,18 @@
 }
 
 .chat-header {
-  padding: 12px 16px;
-  background-color: #f0f2f5;
-  border-bottom: 1px solid #e9edef;
+  padding: 10px 16px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  background: #f0f2f5;
+  border-bottom: 1px solid #e9edef;
+  min-height: 62px; /* Fixed height */
 }
 
 .contact-info {
   display: flex;
   align-items: center;
+  flex-grow: 1;
 }
 
 .contact-info h3 {
@@ -349,27 +359,33 @@ input:checked + .slider:before {
   align-self: flex-end;
 }
 
-.message-content {
+/* .message-content {
   padding: 8px 12px;
   border-radius: 8px;
   position: relative;
   word-wrap: break-word;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
-}
+} */
 
 .message.customer .message-content {
-  background-color: white;
-  border-top-left-radius: 0;
+  background: white;
+  border-radius: 0 8px 8px 8px;
+  box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
 }
 
 .message.agent .message-content {
-  background-color: #d9fdd3;
-  border-top-right-radius: 0;
+  background: #d9fdd3;
+  border-radius: 8px 0 8px 8px;
 }
 
 .message.bot .message-content {
   background-color: #e5e5ea;
   border-top-right-radius: 0;
+}
+.message p {
+  margin: 0;
+  line-height: 1.4;
+  font-size: 15px;
 }
 
 .message-footer {
@@ -392,20 +408,22 @@ input:checked + .slider:before {
 
 /* Message Input */
 .message-input {
-  width: 100%;
-  display: flex;
-  padding: 12px 16px;
-  background-color: #f0f2f5;
+  padding: 8px 16px;
+  background: #f0f2f5;
   border-top: 1px solid #e9edef;
+  min-height: 72px; /* Fixed height */
 }
 .message-input .chat-input {
-  width: 100%;
   display: flex;
+  align-items: center;
+  background: white;
+  border-radius: 8px;
+  padding: 4px 12px;
 }
 
 .message-input input {
   flex: 1;
-  padding: 12px 16px;
+  padding: 10px 8px;
   border: none;
   border-radius: 20px;
   outline: none;
@@ -476,14 +494,16 @@ input:checked + .slider:before {
   }
 
   .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 80%;
-    max-width: 320px;
-    z-index: 90;
-    transform: translateX(-100%);
+    width: 85%;
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .chat-header {
+    padding: 8px 12px;
+  }
+
+  .message {
+    max-width: 85%;
   }
 
   .sidebar.open {
@@ -733,4 +753,44 @@ input:checked + .slider:before {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+/* Add this for audio messages */
+.audio-message {
+  width: 240px;
+  background: white;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.audio-message audio {
+  width: 100%;
+  outline: none;
+}
+
+/* Different colors for sender */
+.message.agent .audio-message {
+  background: #d9fdd3;
+}
+
+/* Add subtle transitions */
+.conversation-item {
+  transition: background 0.2s ease;
+}
+
+.message-input button {
+  transition: transform 0.1s ease;
+}
+
+.message-input button:active {
+  transform: scale(0.95);
+}
+
+/* Loading spinner refinement */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }

@@ -27,6 +27,7 @@ import {
   FiInfo,
 } from "react-icons/fi";
 import "/public/css/whatsapp.css";
+import AudioMessage from "./AudioMessage";
 
 export default function WhatsAppChat() {
   const [input, setInput] = useState("");
