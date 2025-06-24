@@ -103,12 +103,14 @@ export default function WhatsAppChat() {
 
   useEffect(() => {
     if (!selectedContact) return;
-
     const convRef = doc(db, "conversations", selectedContact);
     const unsubscribe = onSnapshot(convRef, (doc) => {
       if (doc.exists()) {
         const data = doc.data();
-        setHandoff(data.handoff || false);
+        if (data.handoff !== handoff) {
+          console.log("[HANDOFF] Updating from Firestore: ", data.handoff);
+          setHandoff(data.handoff || false);
+        }
       }
     });
 
@@ -152,11 +154,13 @@ export default function WhatsAppChat() {
 
   const toggleHandoff = async () => {
     if (!selectedContact) return;
-
+    console.log("[HANDOFF] toggleHandoff Old:  ", handoff);
     const newHandoffState = !handoff;
+    console.log("[HANDOFF] toggleHandoff New:  ", newHandoffState);
+
     try {
       // Optimistically update UI
-      setHandoff(newHandoffState);
+      // setHandoff(newHandoffState);
       // const response = await fetch(
       //   `/api/conversations/${selectedContact}/handoff`,
       //   {
@@ -182,7 +186,7 @@ export default function WhatsAppChat() {
     } catch (error) {
       console.error("Error toggling handoff:", error);
       // Revert on error
-      setHandoff(!newHandoffState);
+      // setHandoff(!newHandoffState);
     }
   };
 
