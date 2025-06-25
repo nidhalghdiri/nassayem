@@ -39,6 +39,7 @@ export default function WhatsAppChat() {
   const [handoff, setHandoff] = useState(false);
   const messagesEndRef = useRef(null);
   const [selectedFile, setSelectedFile] = useState(null);
+  const initialLoad = useRef(true);
 
   // Fetch all conversations sorted by last message timestamp
   useEffect(() => {
@@ -61,9 +62,11 @@ export default function WhatsAppChat() {
       );
 
       setConversations(list);
-      if (list.length > 0 && !selectedContact) {
+      // Only set initial contact on first load
+      if (initialLoad.current && list.length > 0 && !selectedContact) {
         setSelectedContact(list[0].id);
-        setHandoff(list[0].handoff || false); // Initialize handoff state
+        setHandoff(list[0].handoff || false);
+        initialLoad.current = false;
       }
     });
 
