@@ -40,6 +40,7 @@ export default function WhatsAppChat() {
   const messagesEndRef = useRef(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const initialLoad = useRef(true);
+  const [hasManuallySelected, setHasManuallySelected] = useState(false);
 
   // Fetch all conversations sorted by last message timestamp
   useEffect(() => {
@@ -63,11 +64,11 @@ export default function WhatsAppChat() {
 
       setConversations(list);
       // Only set initial contact on first load
-      if (initialLoad.current && list.length > 0 && !selectedContact) {
-        setSelectedContact(list[0].id);
-        setHandoff(list[0].handoff || false);
-        initialLoad.current = false;
-      }
+      // if (initialLoad.current && list.length > 0 && !selectedContact) {
+      //   setSelectedContact(list[0].id);
+      //   setHandoff(list[0].handoff || false);
+      //   initialLoad.current = false;
+      // }
     });
 
     return () => unsubscribe();
@@ -265,6 +266,20 @@ export default function WhatsAppChat() {
       setIsSending(false);
     }
   };
+  const markAsRead = async (conversationId) => {
+    try {
+      const convRef = doc(db, "conversations", conversationId);
+      await setDoc(
+        convRef,
+        {
+          "lastMessage.read": true,
+        },
+        { merge: true }
+      );
+    } catch (error) {
+      console.error("Error marking as read:", error);
+    }
+  };
 
   // Format timestamp to readable time
   const formatTime = (timestamp) => {
@@ -418,6 +433,12 @@ export default function WhatsAppChat() {
             <div
               key={conv.id}
               onClick={() => {
+                if (
+                  conv.lastMessage?.sender === "customer" &&
+                  !conv.lastMessage?.read
+                ) {
+                  markAsRead(conv.id);
+                }
                 setSelectedContact(conv.id);
                 setMobileMenuOpen(false);
               }}
@@ -456,7 +477,7 @@ export default function WhatsAppChat() {
                 )}
                 {conv.lastMessage?.sender === "customer" &&
                   !conv.lastMessage?.read && (
-                    <span className="unread-badge"></span>
+                    <span className="unread-badge">New</span>
                   )}
               </div>
             </div>
