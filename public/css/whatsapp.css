@@ -852,3 +852,9 @@ input:checked + .slider:before {
     transform: rotate(360deg);
   }
 }
+
+.count-badge {
+  font-size: 0.9em;
+  font-weight: normal;
+  color: #666;
+}

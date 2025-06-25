@@ -25,6 +25,7 @@ import {
   FiPhone,
   FiMapPin,
   FiInfo,
+  FiSearch,
 } from "react-icons/fi";
 import "/public/css/whatsapp.css";
 import AudioMessage from "./AudioMessage";
@@ -41,6 +42,8 @@ export default function WhatsAppChat() {
   const [selectedFile, setSelectedFile] = useState(null);
   const initialLoad = useRef(true);
   const [hasManuallySelected, setHasManuallySelected] = useState(false);
+  const [filter, setFilter] = useState("all"); // 'all', 'unread', 'handoff'
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch all conversations sorted by last message timestamp
   useEffect(() => {
@@ -120,40 +123,37 @@ export default function WhatsAppChat() {
     return () => unsubscribe();
   }, [selectedContact]);
 
-  const handleFileChange = (e) => {
-    if (e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
+  // Add this function to filter conversations
+  const filteredConversations = conversations.filter((conv) => {
+    // Apply status filter
+    if (filter === "unread") {
+      if (
+        !(conv.lastMessage?.sender === "customer" && !conv.lastMessage?.read)
+      ) {
+        return false;
+      }
+    } else if (filter === "handoff") {
+      if (!conv.handoff) return false;
     }
-  };
 
-  const uploadImage = async () => {
-    if (!selectedFile || !selectedContact) return;
+    // Apply search filter
+    if (searchQuery) {
+      const searchLower = searchQuery.toLowerCase();
+      const matchesName = conv.customerName
+        ?.toLowerCase()
+        .includes(searchLower);
+      const matchesNumber = conv.id.includes(searchQuery);
+      const matchesMessage = conv.lastMessage?.text
+        ?.toLowerCase()
+        .includes(searchLower);
 
-    // Upload to your storage (e.g., Firebase Storage)
-    const storageRef = ref(
-      storage,
-      `properties/${selectedContact}/${selectedFile.name}`
-    );
-    await uploadBytes(storageRef, selectedFile);
-    const downloadURL = await getDownloadURL(storageRef);
+      if (!(matchesName || matchesNumber || matchesMessage)) {
+        return false;
+      }
+    }
 
-    // Send via API
-    await fetch("/api/whatsapp/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        to: selectedContact,
-        senderType: "agent",
-        media: {
-          type: "image",
-          url: downloadURL,
-          caption: "Property Image",
-        },
-      }),
-    });
-
-    setSelectedFile(null);
-  };
+    return true;
+  });
 
   const toggleHandoff = async () => {
     if (!selectedContact) return;
@@ -415,7 +415,12 @@ export default function WhatsAppChat() {
       {/* Sidebar */}
       <div className={`sidebar ${mobileMenuOpen ? "open" : ""}`}>
         <div className="sidebar-header">
-          <h2>Conversations</h2>
+          <h2>
+            Conversations{" "}
+            <span className="count-badge">
+              ({filteredConversations.length})
+            </span>
+          </h2>
           <div className="sidebar-legend">
             <span className="legend-item">
               <span className="sentiment-icon positive">😊</span> Positive
@@ -427,9 +432,42 @@ export default function WhatsAppChat() {
               <span className="sentiment-icon negative">😠</span> Negative
             </span>
           </div>
+          {/* Add the filter controls section */}
+          <div className="filter-controls">
+            <div className="search-conversations">
+              <input
+                type="text"
+                placeholder="Search conversations..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <FiSearch className="search-icon" />
+            </div>
+
+            <div className="filter-buttons">
+              <button
+                className={filter === "all" ? "active" : ""}
+                onClick={() => setFilter("all")}
+              >
+                All
+              </button>
+              <button
+                className={filter === "unread" ? "active" : ""}
+                onClick={() => setFilter("unread")}
+              >
+                Unread
+              </button>
+              <button
+                className={filter === "handoff" ? "active" : ""}
+                onClick={() => setFilter("handoff")}
+              >
+                Handoff
+              </button>
+            </div>
+          </div>
         </div>
         <div className="conversation-list">
-          {conversations.map((conv) => (
+          {filteredConversations.map((conv) => (
             <div
               key={conv.id}
               onClick={() => {
