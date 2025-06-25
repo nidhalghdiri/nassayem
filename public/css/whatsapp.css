@@ -39,12 +39,10 @@
   border-right: 1px solid #d1d7db;
   background: #f7f8fa;
   height: 100vh;
-  position: fixed;
-  left: 0;
-  top: 0;
-  z-index: 90;
+  overflow-y: auto;
+  flex-shrink: 0;
   transition: transform 0.3s ease;
-  transform: translateX(-100%);
+  z-index: 90;
 }
 .sidebar.open {
   transform: translateX(0);
@@ -267,6 +265,7 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
+  overflow: hidden;
 }
 
 .chat-header {
@@ -529,8 +528,28 @@ input:checked + .slider:before {
   }
 
   .sidebar {
-    width: 85%;
-    max-width: 320px;
+    position: fixed;
+    left: 0;
+    top: 0;
+    transform: translateX(-100%);
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 80;
+    display: none;
+  }
+
+  .sidebar.open + .sidebar-overlay {
+    display: block;
   }
 
   .chat-header {

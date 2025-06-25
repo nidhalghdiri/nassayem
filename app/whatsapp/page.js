@@ -25,7 +25,7 @@ export default function WhatsAppPage() {
 
   return (
     <div>
-      <h1>WhatsApp Messaging Interface</h1>
+      {/* <h1>WhatsApp Messaging Interface</h1> */}
 
       {/* <form onSubmit={handleSubmit}>
         <div>
