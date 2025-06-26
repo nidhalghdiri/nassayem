@@ -14,6 +14,18 @@ export async function POST(request) {
   const { waId } = await request.json();
 
   try {
+    // Get conversation document first to check if already sent
+    const convRef = doc(db, "conversations", waId);
+    const convDoc = await getDoc(convRef);
+    const convData = convDoc.data() || {};
+
+    // Skip if already sent to reception
+    if (convData.summarySentToReception) {
+      return new Response(JSON.stringify({ success: true, skipped: true }), {
+        status: 200,
+      });
+    }
+
     // Get conversation messages
     const messagesRef = collection(db, "conversations", waId, "messages");
     const snapshot = await getDocs(messagesRef);
@@ -88,11 +100,6 @@ export async function POST(request) {
       if (match) analysis[key.toLowerCase()] = match[1].trim();
     });
 
-    // Get conversation document
-    const convRef = doc(db, "conversations", waId);
-    const convDoc = await getDoc(convRef);
-    const convData = convDoc.data() || {};
-
     // Check if all essential info is complete
     const essentialFields = ["building", "check_in", "check_out", "persons"];
     const isComplete = essentialFields.every(
@@ -101,36 +108,60 @@ export async function POST(request) {
         !analysis[field].toLowerCase().includes("not mentioned")
     );
 
-    // Check if we've already sent to reception
-    const summarySent = convData.summarySentToReception || false;
-
-    // Update conversation
+    // Update conversation with analysis
     await updateDoc(convRef, {
       analysis: analysis,
-      ...(!summarySent && isComplete ? { summarySentToReception: true } : {}),
     });
 
     // Send to reception if all info complete and not sent before
-    if (isComplete && !summarySent) {
+    if (isComplete && !convData.summarySentToReception) {
       const receptionNumber = "96898590405";
 
-      if (receptionNumber) {
-        // 1. Send contact message
-        await sendContactMessage(receptionNumber, waId, convData.customerName);
+      // 1. Send contact message (fixed format)
+      // await fetch("/api/whatsapp/send", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({
+      //     to: receptionNumber,
+      //     senderType: "system",
+      //     media: {
+      //       type: "contact",
+      //       contact: {
+      //         name: {
+      //           formatted_name: convData.customerName || waId,
+      //           first_name: convData.customerName || waId,
+      //         },
+      //         phones: [{ phone: waId }],
+      //       },
+      //     },
+      //   }),
+      // });
 
-        // 2. Send summary text
-        const summaryText =
-          `📋 New Booking Inquiry\n` +
-          `👤 Customer: ${convData.customerName || waId}\n` +
-          `📱 Phone: ${waId}\n\n` +
-          `🏢 Building: ${analysis.building}\n` +
-          `📅 Dates: ${analysis.check_in} to ${analysis.check_out}\n` +
-          `👥 Persons: ${analysis.persons}\n\n` +
-          `🔍 Summary (AR): ${analysis.summary_ar}\n\n` +
-          `🔍 Summary (EN): ${analysis.summary_en}\n\n`;
+      // 2. Send summary text
+      const summaryText =
+        `📋 New Booking Inquiry\n` +
+        `👤 Customer: ${convData.customerName || waId}\n` +
+        `📱 Phone: ${waId}\n\n` +
+        `🏢 Building: ${analysis.building}\n` +
+        `📅 Dates: ${analysis.check_in} to ${analysis.check_out}\n` +
+        `👥 Persons: ${analysis.persons}\n\n` +
+        `🔍 Summary (AR): ${analysis.summary_ar}\n\n` +
+        `🔍 Summary (EN): ${analysis.summary_en}`;
 
-        await sendTextMessage(receptionNumber, summaryText);
-      }
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: receptionNumber,
+          message: summaryText,
+          senderType: "system",
+        }),
+      });
+
+      // Mark as sent
+      await updateDoc(convRef, {
+        summarySentToReception: true,
+      });
     }
 
     return new Response(JSON.stringify({ success: true }), { status: 200 });
