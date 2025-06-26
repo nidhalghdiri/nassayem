@@ -201,11 +201,11 @@ export async function POST(request) {
       // Consider retry logic here
     }
 
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/analyze/conversation`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ waId }),
-    });
+    // fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/analyze/conversation`, {
+    //   method: "POST",
+    //   headers: { "Content-Type": "application/json" },
+    //   body: JSON.stringify({ waId }),
+    // });
 
     return new Response("OK", { status: 200 });
   } catch (error) {
