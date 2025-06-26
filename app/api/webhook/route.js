@@ -5,7 +5,6 @@ import { processAudioMessage } from "@/lib/audioService";
 export async function POST(request) {
   try {
     const body = await request.json();
-    let isHandoff;
 
     // Validate webhook payload
     if (!body.entry || !body.entry[0]?.changes?.[0]?.value) {
@@ -35,7 +34,7 @@ export async function POST(request) {
     const messageTimestamp = parseInt(message.timestamp) * 1000;
 
     // Save conversation document
-    // Save conversation document
+    let isHandoff = false;
     try {
       const convRef = doc(db, "conversations", waId);
       const convDoc = await getDoc(convRef);
@@ -71,12 +70,6 @@ export async function POST(request) {
     }
 
     console.log(`Saved message from ${waId}: ${messageText}`);
-
-    // Skip AI processing during handoff
-    if (isHandoff) {
-      console.log(`Skipping AI response for ${waId} (handoff active)`);
-      return new Response("OK (handoff active)", { status: 200 });
-    }
 
     var messageObj = {
       text: messageText,
@@ -199,6 +192,12 @@ export async function POST(request) {
     } catch (error) {
       console.error("### Error adding message to Firestore:", error);
       // Consider retry logic here
+    }
+
+    // Skip AI processing during handoff
+    if (isHandoff) {
+      console.log(`Skipping AI response for ${waId} (handoff active)`);
+      return new Response("OK (handoff active)", { status: 200 });
     }
 
     // fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/analyze/conversation`, {
