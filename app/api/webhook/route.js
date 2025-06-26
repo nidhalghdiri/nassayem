@@ -5,6 +5,7 @@ import { processAudioMessage } from "@/lib/audioService";
 export async function POST(request) {
   try {
     const body = await request.json();
+    let isHandoff;
 
     // Validate webhook payload
     if (!body.entry || !body.entry[0]?.changes?.[0]?.value) {
@@ -38,7 +39,7 @@ export async function POST(request) {
     try {
       const convRef = doc(db, "conversations", waId);
       const convDoc = await getDoc(convRef);
-      const isHandoff = convDoc.exists() ? convDoc.data().handoff : false;
+      isHandoff = convDoc.exists() ? convDoc.data().handoff : false;
 
       await setDoc(
         convRef,
