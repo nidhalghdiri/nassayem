@@ -1,4 +1,10 @@
-import { getDocs, collection, doc, updateDoc } from "firebase/firestore";
+import {
+  getDocs,
+  collection,
+  doc,
+  updateDoc,
+  getDoc,
+} from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import OpenAI from "openai";
 
@@ -82,10 +88,50 @@ export async function POST(request) {
       if (match) analysis[key.toLowerCase()] = match[1].trim();
     });
 
+    // Get conversation document
+    const convRef = doc(db, "conversations", waId);
+    const convDoc = await getDoc(convRef);
+    const convData = convDoc.data() || {};
+
+    // Check if all essential info is complete
+    const essentialFields = ["building", "check_in", "check_out", "persons"];
+    const isComplete = essentialFields.every(
+      (field) =>
+        analysis[field] &&
+        !analysis[field].toLowerCase().includes("not mentioned")
+    );
+
+    // Check if we've already sent to reception
+    const summarySent = convData.summarySentToReception || false;
+
     // Update conversation
-    await updateDoc(doc(db, "conversations", waId), {
+    await updateDoc(convRef, {
       analysis: analysis,
+      ...(!summarySent && isComplete ? { summarySentToReception: true } : {}),
     });
+
+    // Send to reception if all info complete and not sent before
+    if (isComplete && !summarySent) {
+      const receptionNumber = "96898590405";
+
+      if (receptionNumber) {
+        // 1. Send contact message
+        await sendContactMessage(receptionNumber, waId, convData.customerName);
+
+        // 2. Send summary text
+        const summaryText =
+          `📋 New Booking Inquiry\n` +
+          `👤 Customer: ${convData.customerName || waId}\n` +
+          `📱 Phone: ${waId}\n\n` +
+          `🏢 Building: ${analysis.building}\n` +
+          `📅 Dates: ${analysis.check_in} to ${analysis.check_out}\n` +
+          `👥 Persons: ${analysis.persons}\n\n` +
+          `🔍 Summary (AR): ${analysis.summary_ar}\n\n` +
+          `🔍 Summary (EN): ${analysis.summary_en}\n\n`;
+
+        await sendTextMessage(receptionNumber, summaryText);
+      }
+    }
 
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (error) {
@@ -93,5 +139,57 @@ export async function POST(request) {
     return new Response(JSON.stringify({ error: "Analysis failed" }), {
       status: 500,
     });
+  }
+}
+
+// Helper function to send contact message
+async function sendContactMessage(to, waId, customerName) {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: to,
+          senderType: "system",
+          media: {
+            type: "contact",
+            contact: {
+              name: {
+                formatted_name: customerName || waId,
+                first_name: customerName || waId,
+                last_name: "",
+              },
+              phones: [{ phone: waId, wa_id: waId }],
+            },
+          },
+        }),
+      }
+    );
+    return await response.json();
+  } catch (error) {
+    console.error("Failed to send contact:", error);
+  }
+}
+
+// Helper function to send text message
+async function sendTextMessage(to, text) {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: to,
+          message: text,
+          senderType: "bot",
+        }),
+      }
+    );
+    return await response.json();
+  } catch (error) {
+    console.error("Failed to send text:", error);
   }
 }
