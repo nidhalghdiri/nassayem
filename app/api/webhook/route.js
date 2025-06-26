@@ -34,32 +34,40 @@ export async function POST(request) {
     const messageTimestamp = parseInt(message.timestamp) * 1000;
 
     // Save conversation document
-    const convRef = doc(db, "conversations", waId);
-    const convDoc = await getDoc(convRef);
-    const isHandoff = convDoc.exists() ? convDoc.data().handoff : false;
-    await setDoc(
-      convRef,
-      {
-        customerPhoneNumber: waId,
-        customerName: customerName,
-        lastMessage: {
-          text: messageText,
-          timestamp: messageTimestamp,
-          sender: "customer",
+    // Save conversation document
+    try {
+      const convRef = doc(db, "conversations", waId);
+      const convDoc = await getDoc(convRef);
+      const isHandoff = convDoc.exists() ? convDoc.data().handoff : false;
+
+      await setDoc(
+        convRef,
+        {
+          customerPhoneNumber: waId,
+          customerName: customerName,
+          lastMessage: {
+            text: messageText,
+            timestamp: messageTimestamp,
+            sender: "customer",
+          },
+          status: "active",
+          updatedAt: new Date().toISOString(),
+          handoff: isHandoff,
+          analysis: {
+            summary: "",
+            status: "pending",
+            topic: "",
+            sentiment: "",
+            lastAnalyzedAt: null,
+          },
         },
-        status: "active",
-        updatedAt: new Date().toISOString(),
-        handoff: isHandoff,
-        analysis: {
-          summary: "",
-          status: "pending", // pending/analyzed
-          topic: "",
-          sentiment: "",
-          lastAnalyzedAt: null,
-        },
-      },
-      { merge: true }
-    );
+        { merge: true }
+      );
+      console.log(`### Successfully saved conversation document for ${waId}`);
+    } catch (error) {
+      console.error("### Failed to save conversation document:", error);
+      return new Response("### Failed to save conversation", { status: 500 });
+    }
 
     console.log(`Saved message from ${waId}: ${messageText}`);
 
@@ -182,8 +190,15 @@ export async function POST(request) {
     }
 
     // Save individual message
-    const messagesRef = collection(db, "conversations", waId, "messages");
-    await addDoc(messagesRef, messageObj);
+    // Save individual message with proper error handling
+    try {
+      const messagesRef = collection(db, "conversations", waId, "messages");
+      const docRef = await addDoc(messagesRef, messageObj);
+      console.log(`### Message saved with ID: ${docRef.id}`);
+    } catch (error) {
+      console.error("### Error adding message to Firestore:", error);
+      // Consider retry logic here
+    }
 
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/analyze/conversation`, {
       method: "POST",
