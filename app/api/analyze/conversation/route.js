@@ -20,33 +20,63 @@ export async function POST(request) {
 
     const convoText = conversation.join("\n");
 
-    // Generate analysis
+    // Generate analysis with enhanced summary
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         {
           role: "system",
-          content: `Analyze this conversation and provide:
-          1. One-sentence SUMMARY in Arabic
-          2. MAIN TOPIC in 2-3 words
-          3. SENTIMENT (positive/negative/neutral)
-          4. STATUS (resolved/pending/urgent)
+          content: `You are a booking information analyst. Extract these key details from the conversation in both Arabic and English:
+          1. BUILDING: Name or "Not mentioned"
+          2. CHECK_IN: Date or "Not mentioned"
+          3. CHECK_OUT: Date or "Not mentioned"
+          4. PERSONS: Number or "Not mentioned"
+          5. NEED: Customer's primary need
+          6. MISSING: List any missing critical information
           
-          Format: 
-          SUMMARY: [text]
+          Then create:
+          7. SUMMARY_AR: Arabic summary with all details, noting missing info
+          8. SUMMARY_EN: English summary with all details, noting missing info
+          9. TOPIC: 2-3 word category
+          10. SENTIMENT: positive/negative/neutral
+          11. STATUS: resolved/pending/urgent
+          
+          Format:
+          BUILDING: [value]
+          CHECK_IN: [value]
+          CHECK_OUT: [value]
+          PERSONS: [value]
+          NEED: [value]
+          MISSING: [value]
+          SUMMARY_AR: [text]
+          SUMMARY_EN: [text]
           TOPIC: [text]
           SENTIMENT: [text]
           STATUS: [text]`,
         },
         { role: "user", content: convoText },
       ],
+      temperature: 0.3,
+      max_tokens: 500,
     });
 
     // Parse response
     const analysis = { lastAnalyzedAt: new Date() };
     const text = response.choices[0].message.content;
 
-    ["SUMMARY", "TOPIC", "SENTIMENT", "STATUS"].forEach((key) => {
+    [
+      "BUILDING",
+      "CHECK_IN",
+      "CHECK_OUT",
+      "PERSONS",
+      "NEED",
+      "MISSING",
+      "SUMMARY_AR",
+      "SUMMARY_EN",
+      "TOPIC",
+      "SENTIMENT",
+      "STATUS",
+    ].forEach((key) => {
       const regex = new RegExp(`${key}:\\s*(.+)`);
       const match = text.match(regex);
       if (match) analysis[key.toLowerCase()] = match[1].trim();

@@ -566,7 +566,13 @@ export default function WhatsAppChat() {
                     <h4>Conversation Summary</h4>
                     <p>
                       {conversations.find((c) => c.id === selectedContact)
-                        ?.analysis?.summary || "No summary available yet"}
+                        ?.analysis?.summary_ar ||
+                        conversations.find((c) => c.id === selectedContact)
+                          ?.analysis?.summary}
+                    </p>
+                    <p>
+                      {conversations.find((c) => c.id === selectedContact)
+                        ?.analysis?.summary_en || "No summary available yet"}
                     </p>
                   </div>
                 </div>
