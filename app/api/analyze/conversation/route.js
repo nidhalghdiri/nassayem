@@ -12,13 +12,13 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(request) {
   const { waId } = await request.json();
-
+  console.log("Start Analyze Conv: ", waId);
   try {
     // Get conversation document first to check if already sent
     const convRef = doc(db, "conversations", waId);
     const convDoc = await getDoc(convRef);
     const convData = convDoc.data() || {};
-
+    console.log(" Analyze Conv Data: ", convData);
     // Skip if already sent to reception
     if (convData.summarySentToReception) {
       return new Response(JSON.stringify({ success: true, skipped: true }), {
@@ -148,15 +148,17 @@ export async function POST(request) {
         `🔍 Summary (AR): ${analysis.summary_ar}\n\n` +
         `🔍 Summary (EN): ${analysis.summary_en}`;
 
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to: receptionNumber,
-          message: summaryText,
-          senderType: "system",
-        }),
-      });
+      console.log("summaryText: ", summaryText);
+
+      // await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({
+      //     to: receptionNumber,
+      //     message: summaryText,
+      //     senderType: "system",
+      //   }),
+      // });
 
       // Mark as sent
       await updateDoc(convRef, {
