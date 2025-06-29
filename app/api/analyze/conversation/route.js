@@ -9,6 +9,64 @@ import { db } from "@/lib/firebase";
 import OpenAI from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const BUILDING_INFO = {
+  alwadi: {
+    id: "alwadi",
+    name_ar: "بناية الوادي",
+    name_en: "Al Wadi Building",
+    reception: "96898590405",
+    template: "ns_reception_reminder_ar",
+    lang: "ar",
+  },
+  awqad_north: {
+    id: "awqad_north",
+    name_ar: "بناية عوقد",
+    name_en: "Awqad Building",
+    reception: "96898590405",
+    template: "ns_reception_reminder_ar",
+    lang: "ar",
+  },
+  salalah_central: {
+    id: "salalah_central",
+    name_ar: "بناية صلالة الوسطى",
+    name_en: "Salalah Central Building",
+    reception: "96898590405",
+    template: "ns_reception_reminder_ar",
+    lang: "ar",
+  },
+  sadaa: {
+    id: "sadaa",
+    name_ar: "بناية السعادة 25",
+    name_en: "Sadaa 25 Building",
+    reception: "96898590405",
+    template: "ns_reception_reminder_ar",
+    lang: "ar",
+  },
+  sadaa_2: {
+    id: "sadaa_2",
+    name_ar: "بناية السعادة نستو",
+    name_en: "Sadaa Nesto Building",
+    reception: "96898590405",
+    template: "ns_reception_reminder_ar",
+    lang: "ar",
+  },
+  hay_tijari: {
+    id: "hay_tijari",
+    name_ar: "بناية الحي التجاري",
+    name_en: "Commercial District Building",
+    reception: "96898590405",
+    template: "ns_reception_reminder_en",
+    lang: "en",
+  },
+  villa_awqad_b: {
+    id: "villa_awqad_b",
+    name_ar: "فيلا عوقد - مربع ب",
+    name_en: "Awqad Luxury Villa - Square B",
+    reception: "96898590405",
+    template: "ns_reception_reminder_ar",
+    lang: "ar",
+  },
+};
 
 export async function POST(request) {
   const { waId } = await request.json();
@@ -44,8 +102,8 @@ export async function POST(request) {
       messages: [
         {
           role: "system",
-          content: `You are a booking information analyst. Extract these key details from the conversation in both Arabic and English:
-          1. BUILDING: Name or "Not mentioned"
+          content: `You are a booking information analyst. Extract these key details:
+          1. BUILDING_ID: Must be one of these exact values: 'awqad_north', 'alwadi', 'salalah_central', 'hay_tijari', 'sadaa', 'villa_awqad_b' or "Not mentioned"
           2. CHECK_IN: Date or "Not mentioned"
           3. CHECK_OUT: Date or "Not mentioned"
           4. PERSONS: Number or "Not mentioned"
@@ -60,7 +118,7 @@ export async function POST(request) {
           11. STATUS: resolved/pending/urgent
           
           Format:
-          BUILDING: [value]
+          BUILDING_ID: [value]
           CHECK_IN: [value]
           CHECK_OUT: [value]
           PERSONS: [value]
@@ -115,7 +173,19 @@ export async function POST(request) {
 
     // Send to reception if all info complete and not sent before
     if (isComplete && !convData.summarySentToReception) {
-      const receptionNumber = "96898590405";
+      // let receptionNumber = "96898590405"; // Default number
+      // let buildingName = "Unknown Building";
+
+      // if (analysis.building_id && analysis.building_id !== "Not mentioned") {
+      //   const building = BUILDING_INFO[analysis.building_id.toLowerCase()];
+      //   if (building) {
+      //     receptionNumber = building.reception;
+      //     buildingName = building.name;
+      //   }
+      // }
+
+      const buildingId = analysis.building_id;
+      const building = BUILDING_INFO[buildingId];
 
       // 1. Send contact message (fixed format)
       // await fetch("/api/whatsapp/send", {
@@ -137,33 +207,56 @@ export async function POST(request) {
       //   }),
       // });
 
-      // 2. Send summary text
-      const summaryText =
-        `📋 New Booking Inquiry\n` +
-        `👤 Customer: ${convData.customerName || waId}\n` +
-        `📱 Phone: ${waId}\n\n` +
-        `🏢 Building: ${analysis.building}\n` +
-        `📅 Dates: ${analysis.check_in} to ${analysis.check_out}\n` +
-        `👥 Persons: ${analysis.persons}\n\n` +
-        `🔍 Summary (AR): ${analysis.summary_ar}\n\n` +
-        `🔍 Summary (EN): ${analysis.summary_en}`;
+      // 2. Send summary text with building ID info
+      // const summaryText =
+      //   `📋 New Booking Inquiry\n` +
+      //   `🏢 Building: ${buildingName} (ID: ${
+      //     analysis.building_id || "N/A"
+      //   })\n` +
+      //   `👤 Customer: ${convData.customerName || waId}\n` +
+      //   `📱 Phone: ${waId}\n\n` +
+      //   `📅 Dates: ${analysis.check_in} to ${analysis.check_out}\n` +
+      //   `👥 Persons: ${analysis.persons}\n\n` +
+      //   `🔍 Summary (AR): ${analysis.summary_ar}\n\n` +
+      //   `🔍 Summary (EN): ${analysis.summary_en}`;
 
-      console.log("summaryText: ", summaryText);
+      // console.log("Sending summary to reception:", receptionNumber);
+      // console.log("Summary content:", summaryText);
 
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to: receptionNumber,
-          message: summaryText,
-          senderType: "system",
-        }),
-      });
+      // await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({
+      //     to: receptionNumber,
+      //     message: summaryText,
+      //     senderType: "system",
+      //   }),
+      // });
 
-      // Mark as sent
-      await updateDoc(convRef, {
-        summarySentToReception: true,
-      });
+      // Send reminder
+      const reminderResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/reminder`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            conversationId: waId,
+            buildingId,
+            summary: {
+              ar: analysis.summary_ar,
+              en: analysis.summary_en,
+            },
+          }),
+        }
+      );
+
+      if (reminderResponse.ok) {
+        // Mark as sent in conversation
+        await updateDoc(convRef, {
+          summarySentToReception: true,
+          receptionNotified: building.reception,
+        });
+      }
     }
 
     return new Response(JSON.stringify({ success: true }), { status: 200 });
