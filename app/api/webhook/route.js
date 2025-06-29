@@ -200,11 +200,11 @@ export async function POST(request) {
       return new Response("OK (handoff active)", { status: 200 });
     }
 
-    // fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/analyze/conversation`, {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ waId }),
-    // });
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/analyze/conversation`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ waId }),
+    });
 
     return new Response("OK", { status: 200 });
   } catch (error) {

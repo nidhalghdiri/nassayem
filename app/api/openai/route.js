@@ -591,7 +591,7 @@ Customer: ${customerName || "our valued customer"}`.trim(),
       }
     } else {
       // Send response via WhatsApp
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

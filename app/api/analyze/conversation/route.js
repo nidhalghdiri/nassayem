@@ -150,15 +150,15 @@ export async function POST(request) {
 
       console.log("summaryText: ", summaryText);
 
-      // await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({
-      //     to: receptionNumber,
-      //     message: summaryText,
-      //     senderType: "system",
-      //   }),
-      // });
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: receptionNumber,
+          message: summaryText,
+          senderType: "system",
+        }),
+      });
 
       // Mark as sent
       await updateDoc(convRef, {
