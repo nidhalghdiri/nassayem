@@ -113,6 +113,8 @@ export async function POST(request) {
       building.name_ar
     );
 
+    console.log("Reminder templateResponse: ", templateResponse);
+
     // Update reminder status
     await updateDoc(docRef, {
       status: templateResponse.success ? "sent" : "failed",
