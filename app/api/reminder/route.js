@@ -79,7 +79,7 @@ export async function POST(request) {
     }
 
     // Get building info
-    const building = BUILDING_INFO[buildingId];
+    const building = BUILDING_INFO[buildingId.toLowerCase()];
     if (!building) {
       return new Response(JSON.stringify({ error: "Invalid building ID" }), {
         status: 400,

@@ -141,7 +141,7 @@ export async function POST(request) {
     const text = response.choices[0].message.content;
 
     [
-      "BUILDING",
+      "BUILDING_ID",
       "CHECK_IN",
       "CHECK_OUT",
       "PERSONS",
@@ -159,7 +159,7 @@ export async function POST(request) {
     });
 
     // Check if all essential info is complete
-    const essentialFields = ["building", "check_in", "check_out", "persons"];
+    const essentialFields = ["building_id", "check_in", "check_out", "persons"];
     const isComplete = essentialFields.every(
       (field) =>
         analysis[field] &&
@@ -184,54 +184,8 @@ export async function POST(request) {
       //   }
       // }
 
-      const buildingId = analysis.building_id;
+      const buildingId = analysis.building_id.toLowerCase();
       const building = BUILDING_INFO[buildingId];
-
-      // 1. Send contact message (fixed format)
-      // await fetch("/api/whatsapp/send", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({
-      //     to: receptionNumber,
-      //     senderType: "system",
-      //     media: {
-      //       type: "contact",
-      //       contact: {
-      //         name: {
-      //           formatted_name: convData.customerName || waId,
-      //           first_name: convData.customerName || waId,
-      //         },
-      //         phones: [{ phone: waId }],
-      //       },
-      //     },
-      //   }),
-      // });
-
-      // 2. Send summary text with building ID info
-      // const summaryText =
-      //   `📋 New Booking Inquiry\n` +
-      //   `🏢 Building: ${buildingName} (ID: ${
-      //     analysis.building_id || "N/A"
-      //   })\n` +
-      //   `👤 Customer: ${convData.customerName || waId}\n` +
-      //   `📱 Phone: ${waId}\n\n` +
-      //   `📅 Dates: ${analysis.check_in} to ${analysis.check_out}\n` +
-      //   `👥 Persons: ${analysis.persons}\n\n` +
-      //   `🔍 Summary (AR): ${analysis.summary_ar}\n\n` +
-      //   `🔍 Summary (EN): ${analysis.summary_en}`;
-
-      // console.log("Sending summary to reception:", receptionNumber);
-      // console.log("Summary content:", summaryText);
-
-      // await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/send`, {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({
-      //     to: receptionNumber,
-      //     message: summaryText,
-      //     senderType: "system",
-      //   }),
-      // });
 
       // Send reminder
       const reminderResponse = await fetch(
@@ -241,7 +195,7 @@ export async function POST(request) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             conversationId: waId,
-            buildingId,
+            buildingId: building.id,
             summary: {
               ar: analysis.summary_ar,
               en: analysis.summary_en,
