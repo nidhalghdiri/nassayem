@@ -154,11 +154,15 @@ async function sendTemplateMessage(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
         to,
+        type: "template",
         template: {
-          messaging_product: "whatsapp",
           name: templateName,
-          language: lang == "en" ? "en_US" : "ar",
+          language: {
+            code: lang == "en" ? "en_US" : "ar",
+          },
           components: [
             {
               type: "body",
