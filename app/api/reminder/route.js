@@ -1,5 +1,5 @@
 // app/api/reminder/route.js
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 // Building configuration
@@ -100,6 +100,8 @@ export async function POST(request) {
     // Save to ConversationReminder collection
     const remindersRef = collection(db, "conversationReminder");
     const docRef = await addDoc(remindersRef, reminderData);
+
+    console.log("Reminder Building Data: ", building);
 
     // Send WhatsApp template
     const templateResponse = await sendTemplateMessage(
