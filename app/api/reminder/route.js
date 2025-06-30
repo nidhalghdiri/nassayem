@@ -156,6 +156,7 @@ async function sendTemplateMessage(
       body: JSON.stringify({
         to,
         template: {
+          messaging_product: "whatsapp",
           name: templateName,
           language: lang == "en" ? "en_US" : "ar",
           components: [
