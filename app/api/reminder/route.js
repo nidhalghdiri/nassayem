@@ -65,7 +65,15 @@ const BUILDING_INFO = {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { conversationId, buildingId, summary } = body;
+    const {
+      conversationId,
+      buildingId,
+      customerNumber,
+      customerName,
+      dates,
+      persons,
+      summary,
+    } = body;
 
     // Validate required fields
     if (!conversationId || !buildingId || !summary?.ar || !summary?.en) {
@@ -110,7 +118,11 @@ export async function POST(request) {
       building.template,
       conversationId,
       summary[building.lang],
-      building.name_ar
+      building.name_ar,
+      customerNumber,
+      customerName,
+      dates,
+      persons
     );
 
     console.log("Reminder templateResponse: ", templateResponse);
@@ -140,7 +152,11 @@ async function sendTemplateMessage(
   templateName,
   conversationId,
   summary,
-  building_name
+  building_name,
+  customerNumber,
+  customerName,
+  dates,
+  persons
 ) {
   try {
     const accessToken =
@@ -168,10 +184,10 @@ async function sendTemplateMessage(
               type: "body",
               parameters: [
                 { type: "text", text: building_name },
-                { type: "text", text: "Nidhal Ghdiri" },
-                { type: "text", text: "96898590405" },
-                { type: "text", text: "10/07 to 20/07" },
-                { type: "text", text: "4" },
+                { type: "text", text: customerName },
+                { type: "text", text: customerNumber },
+                { type: "text", text: dates },
+                { type: "text", text: persons },
                 { type: "text", text: summary.slice(0, 100) },
               ],
             },
