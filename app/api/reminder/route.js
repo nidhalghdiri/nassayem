@@ -127,6 +127,24 @@ export async function POST(request) {
 
     console.log("Reminder templateResponse: ", templateResponse);
 
+    const templateResponseCallCenter = await sendTemplateMessage(
+      "96876781481",
+      building.lang,
+      building.template,
+      conversationId,
+      summary[building.lang],
+      building.name_ar,
+      customerNumber,
+      customerName,
+      dates,
+      persons
+    );
+
+    console.log(
+      "Reminder templateResponseCallCenter: ",
+      templateResponseCallCenter
+    );
+
     // Update reminder status
     await updateDoc(docRef, {
       status: templateResponse.success ? "sent" : "failed",
