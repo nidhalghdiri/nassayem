@@ -7,6 +7,7 @@ import "/public/css/animate.css";
 import "/public/css/styles.css";
 
 import { DM_Sans, Josefin_Sans } from "next/font/google";
+import Script from "next/script";
 
 const dm = DM_Sans({
   weight: ["300", "400", "500", "600", "700"],
@@ -57,6 +58,23 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={`${dm.variable} ${josefin.variable} body`}>
+        {/* Add the Google Tag Scripts here */}
+        {/* This first script loads the external gtag.js file */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=AW-17490889277"
+          strategy="afterInteractive" // Loads after the page is interactive for best performance
+        />
+
+        {/* This second script contains the initialization code */}
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'AW-17490889277');
+          `}
+        </Script>
+        {/* End of Google Tag */}
         {children}
       </body>
     </html>
