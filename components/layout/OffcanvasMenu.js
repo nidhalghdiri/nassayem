@@ -342,7 +342,7 @@ export default function OffcanvasMenu({
           <div className="menu-icon-box">
             <div className="box d-flex align-items-center">
               <span className="icon icon-phone2" />
-              <div>+968 9848 8802</div>
+              <div>+968 9899 4036</div>
             </div>
             <div className="box d-flex align-items-center">
               <span className="icon icon-mail" />

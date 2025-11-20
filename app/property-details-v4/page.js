@@ -757,7 +757,7 @@ export default function PropertyDetailsV4() {
                     <div className="info">
                       <div className="text-1 name">Shara Conner</div>
                       <span>
-                        +968 9848 8802 <br /> nssayemsalalah@gmail.com
+                        +968 9899 4036 <br /> nssayemsalalah@gmail.com
                       </span>
                     </div>
                   </div>

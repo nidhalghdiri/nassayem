@@ -84,7 +84,7 @@ export default function Contact() {
                       <li className="box">
                         <div className="text-1 title">Infomation:</div>
                         <p className="p-16 text-variant-1">
-                          +968 9848 8802 <br /> nssayemsalalah@gmail.com
+                          +968 9899 4036 <br /> nssayemsalalah@gmail.com
                         </p>
                       </li>
                       <li className="box">

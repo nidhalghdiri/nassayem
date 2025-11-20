@@ -45,7 +45,7 @@ export default function Agents4() {
                   <ul className="list-info">
                     <li>
                       <span className="icon icon-phone2" />
-                      +968 9848 8802
+                      +968 9899 4036
                     </li>
                     <li>
                       <span className="icon icon-mail" />
@@ -90,7 +90,7 @@ export default function Agents4() {
                   <ul className="list-info">
                     <li>
                       <span className="icon icon-phone2" />
-                      +968 9848 8802
+                      +968 9899 4036
                     </li>
                     <li>
                       <span className="icon icon-mail" />
@@ -135,7 +135,7 @@ export default function Agents4() {
                   <ul className="list-info">
                     <li>
                       <span className="icon icon-phone2" />
-                      +968 9848 8802
+                      +968 9899 4036
                     </li>
                     <li>
                       <span className="icon icon-mail" />

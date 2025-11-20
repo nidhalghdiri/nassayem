@@ -76,7 +76,7 @@ export default function Footer1() {
                         href="tel:+96898488802"
                         className="text-white caption-1"
                       >
-                        +968 9848 8802
+                        +968 9899 4036
                       </Link>
                     </li>
                     <li className="mt-12 d-flex align-items-center gap-8">
