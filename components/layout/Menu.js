@@ -3,8 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 
 export default function Menu() {
+  const locale = useLocale();
+  const t = useTranslations("header.nav");
   const pathname = usePathname();
   const [currentMenuItem, setCurrentMenuItem] = useState("");
 
@@ -13,28 +17,31 @@ export default function Menu() {
   }, [pathname]);
 
   const checkCurrentMenuItem = (path) =>
-    currentMenuItem === path ? "current" : "";
-  const checkParentActive = (paths) =>
-    paths.some((path) => currentMenuItem.startsWith(path)) ? "current" : "";
+    currentMenuItem.includes(path) ? "current" : "";
+
+  const menuItems = [
+    { href: `/${locale}`, label: t("home") },
+    { href: `/${locale}/about-us`, label: t("about") },
+    { href: `/${locale}/properties`, label: t("properties") },
+    { href: `/${locale}/blog`, label: t("blog") },
+    { href: `/${locale}/contact`, label: t("contact") },
+  ];
 
   return (
     <>
-      <ul className="navigation clearfix">
-        <li className={`home`}>
-          <Link href="/">Home</Link>
-        </li>
-        <li>
-          <Link href="/about-us">About Us</Link>
-        </li>
-        {/* <li>
-          <Link href="/sidebar-grid">Properties</Link>
-        </li> */}
-        <li>
-          <Link href="/blog">Blog</Link>
-        </li>
-        <li>
-          <Link href="/contact">Contact Us</Link>
-        </li>
+      <ul
+        className={`navigation clearfix ${locale === "ar" ? "text-right" : ""}`}
+      >
+        {menuItems.map((item) => (
+          <li key={item.href} className={checkCurrentMenuItem(item.href)}>
+            <Link
+              href={item.href}
+              className="hover:text-primary transition-colors duration-300"
+            >
+              {item.label}
+            </Link>
+          </li>
+        ))}
         {/* <li
           className={`dropdown2 ${checkParentActive([
             "/property-halfmap-grid",

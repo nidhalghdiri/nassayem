@@ -1,0 +1,19 @@
+{
+  "nav": {
+    "home": "الرئيسية",
+    "about": "من نحن",
+    "properties": "العقارات",
+    "blog": "المدونة",
+    "contact": "اتصل بنا",
+    "login": "تسجيل الدخول",
+    "register": "تسجيل"
+  },
+  "language": {
+    "en": "English",
+    "ar": "العربية"
+  },
+  "cta": {
+    "bookNow": "احجز الآن",
+    "viewProperties": "عرض العقارات"
+  }
+}

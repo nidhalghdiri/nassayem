@@ -8,6 +8,9 @@ import "/public/css/styles.css";
 
 import { DM_Sans, Josefin_Sans } from "next/font/google";
 import Script from "next/script";
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages } from "next-intl/server";
+import { notFound } from "next/navigation";
 
 const dm = DM_Sans({
   weight: ["300", "400", "500", "600", "700"],
@@ -54,9 +57,12 @@ export const metadata = {
   },
 };
 
-export default function RootLayout({ children }) {
+const locales = ["en", "ar"];
+export default async function RootLayout({ children, params: { locale } }) {
+  if (!locales.includes(locale)) notFound();
+  const messages = await getMessages();
   return (
-    <html lang="en">
+    <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"}>
       <body className={`${dm.variable} ${josefin.variable} body`}>
         {/* Add the Google Tag Scripts here */}
         {/* This first script loads the external gtag.js file */}
@@ -75,7 +81,10 @@ export default function RootLayout({ children }) {
           `}
         </Script>
         {/* End of Google Tag */}
-        {children}
+
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          {children}
+        </NextIntlClientProvider>
       </body>
     </html>
   );
