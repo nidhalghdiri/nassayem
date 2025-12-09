@@ -1,0 +1,19 @@
+{
+  "buttons": {
+    "viewAll": "عرض الكل",
+    "readMore": "اقرأ المزيد",
+    "bookNow": "احجز الآن",
+    "contactUs": "اتصل بنا",
+    "search": "بحث",
+    "properties": "الشقق",
+    "find_properties": "أبحث عن شقة"
+  },
+  "labels": {
+    "bedrooms": "غرف نوم",
+    "bathrooms": "حمامات",
+    "sqft": "قدم مربع",
+    "location": "الموقع",
+    "price": "السعر",
+    "type": "النوع"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "hero": {
+    "title": "Find Your Stay in Salalah",
+    "subtitle": "We help you find the ideal property for short-term or long-term stays. Explore our wide range of options today.",
+    "searchKeywordPlaceholder": "Enter Keyword...",
+    "searchLocationPlaceholder": "Enter Location...",
+    "findProperties": "Find Properties",
+    "advanced": "Advanced"
+  },
+  "featured": {
+    "title": "Featured Properties",
+    "subtitle": "Discover our handpicked selection of premium properties"
+  },
+  "testimonials": {
+    "title": "What People Say",
+    "subtitle": "Hear from our satisfied customers"
+  },
+  "blog": {
+    "title": "Latest Articles",
+    "subtitle": "Stay updated with property insights and Salalah news"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "buttons": {
+    "viewAll": "View All",
+    "readMore": "Read More",
+    "bookNow": "Book Now",
+    "contactUs": "Contact Us",
+    "search": "Search",
+    "properties": "Properties",
+    "find_properties": "Find Properties"
+  },
+  "labels": {
+    "bedrooms": "Bedrooms",
+    "bathrooms": "Bathrooms",
+    "sqft": "Sq Ft",
+    "location": "Location",
+    "price": "Price",
+    "type": "Type"
+  }
+}

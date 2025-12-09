@@ -1,6 +1,8 @@
+import { useTranslations } from "@/lib/translations";
 import Link from "next/link";
 
-export default function Recommended4() {
+export default function Recommended4({ currentLocale }) {
+  const translate = useTranslations(currentLocale);
   return (
     <>
       <section className="flat-section-v5 bg-surface flat-recommended flat-recommended-v2">
@@ -11,11 +13,9 @@ export default function Recommended4() {
             data-wow-duration="2000ms"
           >
             <div className="text-subtitle text-primary">
-              Featured Properties
+              {translate("home", "featured.title")}
             </div>
-            <h4 className="mt-4">
-              Discover Nassayem Salalah's Finest Properties
-            </h4>
+            <h4 className="mt-4">{translate("home", "featured.subtitle")}</h4>
           </div>
           <div
             className="row wow fadeInUpSmall"

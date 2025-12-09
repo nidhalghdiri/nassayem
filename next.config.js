@@ -3,12 +3,12 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  i18n: {
-    locales: ["en", "ar"],
-    defaultLocale: "en",
-    localeDetection: true,
-  },
-  // For Arabic RTL support
+  // ✅ Enable built-in i18n
+  // i18n: {
+  //   locales: ["en", "ar"],
+  //   defaultLocale: "en",
+  //   localeDetection: true, // Auto-detect user's language
+  // },
   compiler: {
     styledComponents: true,
   },

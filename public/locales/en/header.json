@@ -2,18 +2,10 @@
   "nav": {
     "home": "Home",
     "about": "About Us",
-    "properties": "Our Properties",
+    "properties": "Properties",
     "blog": "Blog",
-    "contact": "Contact Us",
-    "login": "Login",
-    "register": "Register"
+    "contact": "Contact Us"
   },
-  "language": {
-    "en": "English",
-    "ar": "العربية"
-  },
-  "cta": {
-    "bookNow": "Book Now",
-    "viewProperties": "View Properties"
-  }
+  "cta": "View Properties",
+  "language": "Language"
 }

@@ -1,50 +1,12 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import LanguageSwitcher from "../../LanguageSwitcher";
 import Menu from "../Menu";
 import MobileMenu from "../MobileMenu";
-import { usePathname, useRouter } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
-import Image from "next/image";
-
-// Language Switcher Component
-function LanguageSwitcher() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const locale = useLocale();
-  const t = useTranslations("header.language");
-
-  const switchLanguage = (newLocale) => {
-    const segments = pathname.split("/");
-    segments[1] = newLocale;
-    router.push(segments.join("/"));
-  };
-
-  return (
-    <div className="language-switcher flex items-center ml-4">
-      <button
-        onClick={() => switchLanguage(locale === "en" ? "ar" : "en")}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        aria-label="Switch language"
-      >
-        <span className="text-sm font-medium">
-          {locale === "en" ? "عربي" : "English"}
-        </span>
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
-          />
-        </svg>
-      </button>
-    </div>
-  );
-}
+import { useTranslations } from "@/lib/translations";
 
 export default function Header1({
   scroll,
@@ -55,24 +17,35 @@ export default function Header1({
   hcls,
   handleRegister,
 }) {
-  const locale = useLocale();
-  const t = useTranslations("header");
-  const [currentMenuItem, setCurrentMenuItem] = useState("");
   const pathname = usePathname();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [currentLocale, setCurrentLocale] = useState("en");
+  const translate = useTranslations(currentLocale);
 
   useEffect(() => {
-    setCurrentMenuItem(pathname);
+    // Get locale from URL
+    const locale = pathname.split("/")[1] || "en";
+    setCurrentLocale(locale);
   }, [pathname]);
 
-  const checkCurrentMenuItem = (path) =>
-    currentMenuItem === path ? "current" : "";
+  const isArabic = currentLocale === "ar";
+
+  // Navigation items with translations
+  const navItems = [
+    { path: "/", en: "Home", ar: "الرئيسية" },
+    { path: "/about-us", en: "About Us", ar: "من نحن" },
+    { path: "/properties", en: "Properties", ar: "العقارات" },
+    { path: "/blog", en: "Blog", ar: "المدونة" },
+    { path: "/contact", en: "Contact Us", ar: "اتصل بنا" },
+  ];
+
   return (
     <>
       <header
         className={`main-header fixed-header ${hcls ? "header-style-2" : ""} ${
           scroll ? "fixed-header is-fixed" : ""
-        } ${locale === "ar" ? "rtl" : "ltr"}`}
-        dir={locale === "ar" ? "rtl" : "ltr"}
+        } ${currentLocale === "ar" ? "rtl" : "ltr"}`}
+        dir={currentLocale === "ar" ? "rtl" : "ltr"}
       >
         {/* Header Lower */}
         <div className="header-lower">
@@ -82,7 +55,7 @@ export default function Header1({
                 {/* Logo Box */}
                 <div className="logo-box">
                   <div className="logo">
-                    <Link href={`/${locale}`}>
+                    <Link href={`/${currentLocale}`}>
                       {hcls ? (
                         <img
                           src="/images/logo/logo-footer@2x.png"
@@ -108,7 +81,7 @@ export default function Header1({
                       className="navbar-collapse collapse clearfix"
                       id="navbarSupportedContent"
                     >
-                      <Menu />
+                      <Menu currentLocale={currentLocale} />
                     </div>
                   </nav>
                   {/* Main Menu End*/}
@@ -120,9 +93,9 @@ export default function Header1({
                   <div className="flat-bt-top d-none d-md-block">
                     <Link
                       className="tf-btn primary"
-                      href={`/${locale}/properties`}
+                      href={`/${currentLocale}/properties`}
                     >
-                      {t("cta.viewProperties")}
+                      {translate("common", "buttons.properties")}
                     </Link>
                   </div>
                   {/* <div className="register">
@@ -159,7 +132,7 @@ export default function Header1({
           <div className="menu-backdrop" onClick={handleMobileMenu} />
           <nav className="menu-box">
             <div className="nav-logo">
-              <Link href={`/${locale}`}>
+              <Link href={`/${currentLocale}`}>
                 <img
                   src="/images/logo/logo@2x.png"
                   alt="Nasaem Salalah"
@@ -180,8 +153,11 @@ export default function Header1({
               </div> */}
               <MobileMenu />
               <div className="button-mobi-sell">
-                <Link className="tf-btn primary" href={`/${locale}/properties`}>
-                  {t("cta.viewProperties")}
+                <Link
+                  className="tf-btn primary"
+                  href={`/${currentLocale}/properties`}
+                >
+                  Properties
                 </Link>
               </div>
               <div className="mobi-icon-box">

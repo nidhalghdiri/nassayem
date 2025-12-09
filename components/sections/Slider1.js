@@ -3,9 +3,13 @@ import { useEffect, useState } from "react";
 import TextTransition, { presets } from "react-text-transition";
 import AdvancedFilter from "../elements/AdvancedFilter";
 import TabNav from "../elements/TabNav";
+import { useTranslations } from "@/lib/translations";
 const TEXTS = ["Space", "Stay ", "Rental"];
-export default function Slider1() {
+const TEXTS_AR = ["إقامتك", "راحتك ", "شقتك"];
+export default function Slider1({ currentLocale }) {
   const [index, setIndex] = useState(1);
+  const translate = useTranslations(currentLocale);
+
   useEffect(() => {
     const intervalId = setInterval(
       () => setIndex((index) => index + 1),
@@ -21,26 +25,40 @@ export default function Slider1() {
             <div className="col-lg-12">
               <div className="slider-content">
                 <div className="heading text-center">
-                  <h1 className="text-white animationtext slide">
-                    Find Your
-                    <span className="tf-text s1 cd-words-wrapper ms-3">
-                      <TextTransition
-                        springConfig={presets.wobbly}
-                        style={{ color: "#2a7475" }}
-                      >
-                        {TEXTS[index % TEXTS.length]}
-                      </TextTransition>
-                    </span>
-                    &nbsp;in Salalah
-                  </h1>
+                  {currentLocale === "ar" ? (
+                    <h1 className="text-white animationtext slide">
+                      ابحث عن
+                      <span className="tf-text s1 cd-words-wrapper ms-3">
+                        <TextTransition
+                          springConfig={presets.wobbly}
+                          style={{ color: "#2a7475" }}
+                        >
+                          &nbsp;{TEXTS_AR[index % TEXTS.length]}
+                        </TextTransition>
+                      </span>
+                      &nbsp;في صلالة
+                    </h1>
+                  ) : (
+                    <h1 className="text-white animationtext slide">
+                      Find Your
+                      <span className="tf-text s1 cd-words-wrapper ms-3">
+                        <TextTransition
+                          springConfig={presets.wobbly}
+                          style={{ color: "#2a7475" }}
+                        >
+                          {TEXTS[index % TEXTS.length]}
+                        </TextTransition>
+                      </span>
+                      &nbsp;in Salalah
+                    </h1>
+                  )}
 
                   <p
                     className="subtitle text-white body-1 wow fadeIn"
                     data-wow-delay=".8s"
                     data-wow-duration="2000ms"
                   >
-                    We help you find the ideal property for short-term or
-                    long-term stays. Explore our wide range of options today.
+                    {translate("home", "hero.subtitle")}
                   </p>
                 </div>
                 <div className="flat-tab flat-tab-form">
@@ -51,7 +69,10 @@ export default function Slider1() {
                     <div className="tab-pane fade active show" role="tabpanel">
                       <div className="form-sl">
                         <form method="post">
-                          <AdvancedFilter sidecls="shadow-st" />
+                          <AdvancedFilter
+                            sidecls="shadow-st"
+                            currentLocale={currentLocale}
+                          />
                         </form>
                       </div>
                     </div>

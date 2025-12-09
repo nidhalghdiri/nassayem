@@ -4,16 +4,8 @@
     "about": "من نحن",
     "properties": "العقارات",
     "blog": "المدونة",
-    "contact": "اتصل بنا",
-    "login": "تسجيل الدخول",
-    "register": "تسجيل"
+    "contact": "اتصل بنا"
   },
-  "language": {
-    "en": "English",
-    "ar": "العربية"
-  },
-  "cta": {
-    "bookNow": "احجز الآن",
-    "viewProperties": "عرض العقارات"
-  }
+  "cta": "عرض العقارات",
+  "language": "اللغة"
 }

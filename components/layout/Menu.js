@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "@/lib/translations";
 
-export default function Menu() {
-  const locale = useLocale();
-  const t = useTranslations("header.nav");
+export default function Menu({ currentLocale }) {
   const pathname = usePathname();
   const [currentMenuItem, setCurrentMenuItem] = useState("");
+
+  const translate = useTranslations(currentLocale);
 
   useEffect(() => {
     setCurrentMenuItem(pathname);
@@ -19,25 +19,23 @@ export default function Menu() {
     currentMenuItem.includes(path) ? "current" : "";
 
   const menuItems = [
-    { href: `/${locale}`, label: t("home") },
-    { href: `/${locale}/about-us`, label: t("about") },
-    { href: `/${locale}/properties`, label: t("properties") },
-    { href: `/${locale}/blog`, label: t("blog") },
-    { href: `/${locale}/contact`, label: t("contact") },
+    { path: "/", id: "nav.home" },
+    { path: "/about-us", id: "nav.about" },
+    { path: "/properties", id: "nav.properties" },
+    { path: "/blog", id: "nav.blog" },
+    { path: "/contact", id: "nav.contact" },
   ];
 
   return (
     <>
-      <ul
-        className={`navigation clearfix ${locale === "ar" ? "text-right" : ""}`}
-      >
+      <ul className={`navigation clearfix`}>
         {menuItems.map((item) => (
-          <li key={item.href} className={checkCurrentMenuItem(item.href)}>
+          <li key={item.id} className={checkCurrentMenuItem(item.path)}>
             <Link
-              href={item.href}
+              href={item.path}
               className="hover:text-primary transition-colors duration-300"
             >
-              {item.label}
+              {translate("header", item.id)}
             </Link>
           </li>
         ))}
