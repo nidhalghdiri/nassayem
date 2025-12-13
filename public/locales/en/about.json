@@ -1,0 +1,69 @@
+{
+  "hero": {
+    "title": "Welcome To",
+    "companyName": "Nassayem Salalah",
+    "subtitle": "Your Trusted Partner in Property Management and Serviced Apartments"
+  },
+  "introduction": {
+    "title": "About Us",
+    "content": "Global Al Saida United LLC, known by the trade name Nassayem Salalah, was established in 2022 to be a strong pillar in enhancing the local economy in Dhofar and to be among the leading companies in real estate development. Nassayem Salalah boasts extensive experience in furnished apartment rentals and real estate development, offering innovative solutions that meet the needs of both individuals and investors. The company takes pride in contributing to society by providing job opportunities for a number of citizens while committing to providing a decent and stimulating work environment for all. Nassayem Salalah currently owns and manages more than 300 residential units and villas spread across strategic locations in Dhofar, with future expansion plans to cover more promising cities and regions."
+  },
+  "visionMission": {
+    "title": "Vision & Mission",
+    "vision": {
+      "title": "Our Vision",
+      "content": "To create a new and ideal image in the world of serviced apartments and to become the leading real estate development company in Dhofar."
+    },
+    "mission": {
+      "title": "Our Mission",
+      "content": "Providing a distinguished stay experience built on quality, comfort, and a strategic location, while remaining committed to authentic Omani and Arab hospitality."
+    }
+  },
+  "values": {
+    "title": "Our Core Values",
+    "quality": {
+      "title": "Quality",
+      "content": "To maintain the highest standards of quality in cleanliness, construction, and design."
+    },
+    "customerSatisfaction": {
+      "title": "Customer Satisfaction",
+      "content": "To provide smooth and exceptional experiences that meet and exceed customer expectations."
+    },
+    "leadership": {
+      "title": "Leadership",
+      "content": "To consistently exceed expectations and set an example for others to follow."
+    },
+    "responsibility": {
+      "title": "Responsibility",
+      "content": "To take full responsibility for our actions, decisions, and contributions to society."
+    },
+    "partnership": {
+      "title": "Partnership",
+      "content": "To achieve mutual benefit for us and everyone we deal with."
+    }
+  },
+  "expansion": {
+    "title": "Future Expansion Plans",
+    "content": "At Nassayem Salalah, we believe that sustainable growth is the key to success. After establishing more than 300 residential units in strategic locations in Dhofar Governorate, we are currently working on implementing an expansion plan that includes:",
+    "points": [
+      "Opening new branches in multiple states and regions in the Sultanate and Arab Gulf countries.",
+      "Plan to add more than 200 new units in the next two years, including apartments, hotel rooms, and family villas.",
+      "Launching an electronic booking platform to facilitate access to our services from inside and outside the Sultanate."
+    ]
+  },
+  "whyUs": {
+    "title": "Why Choose Nassayem Salalah?",
+    "content": "At Nassayem Salalah, we believe that hospitality is not merely a stay — it's an experience crafted with care and detail. We stand out with elegant designs, prime locations, and hotel services inspired by the warmth of authentic Omani and Arab hospitality. We deliver comfort that goes beyond expectations, striving always to be the first choice for accommodation in Dhofar.",
+    "points": [
+      "Elegant and modern designs",
+      "Strategic prime locations",
+      "Authentic Omani hospitality",
+      "Exceed customer expectations",
+      "24/7 dedicated support"
+    ]
+  },
+  "cta": {
+    "contact": "Contact Us",
+    "explore": "Explore Properties"
+  }
+}

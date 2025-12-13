@@ -6,7 +6,8 @@
     "contactUs": "Contact Us",
     "search": "Search",
     "properties": "Properties",
-    "find_properties": "Find Properties"
+    "find_properties": "Find Properties",
+    "viewAllProperties": "View All Properties"
   },
   "labels": {
     "bedrooms": "Bedrooms",

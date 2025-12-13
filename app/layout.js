@@ -1,5 +1,6 @@
 // This is the ROOT layout - DO NOT add 'use client' here
 import { DM_Sans } from "next/font/google";
+import { Providers } from "./providers";
 
 const dm = DM_Sans({
   weight: ["400", "500", "600", "700"],
@@ -16,7 +17,9 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={dm.className}>
-      <body>{children}</body>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

@@ -20,11 +20,11 @@ export default function Home() {
   }, [pathname]);
 
   return (
-    <Layout headerStyle={1} footerStyle={1}>
+    <Layout headerStyle={1} footerStyle={1} currentLocale={currentLocale}>
       <Slider1 currentLocale={currentLocale} />
       <Recommended4 currentLocale={currentLocale} />
-      <Testimonial1 />
-      <LatestNew3 />
+      <Testimonial1 currentLocale={currentLocale} />
+      <LatestNew3 currentLocale={currentLocale} />
     </Layout>
   );
 }

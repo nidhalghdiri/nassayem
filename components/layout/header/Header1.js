@@ -28,17 +28,6 @@ export default function Header1({
     setCurrentLocale(locale);
   }, [pathname]);
 
-  const isArabic = currentLocale === "ar";
-
-  // Navigation items with translations
-  const navItems = [
-    { path: "/", en: "Home", ar: "الرئيسية" },
-    { path: "/about-us", en: "About Us", ar: "من نحن" },
-    { path: "/properties", en: "Properties", ar: "العقارات" },
-    { path: "/blog", en: "Blog", ar: "المدونة" },
-    { path: "/contact", en: "Contact Us", ar: "اتصل بنا" },
-  ];
-
   return (
     <>
       <header

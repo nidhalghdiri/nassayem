@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "@/lib/translations";
 import { Autoplay, Navigation, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 
@@ -31,7 +32,8 @@ const swiperOptions = {
     },
   },
 };
-export default function Testimonial1() {
+export default function Testimonial1({ currentLocale }) {
+  const translate = useTranslations(currentLocale);
   return (
     <>
       <section className="flat-section-v3 bg-surface flat-testimonial">
@@ -39,13 +41,15 @@ export default function Testimonial1() {
           <div className="row align-items-center">
             <div className="col-lg-3">
               <div className="box-title">
-                <div className="text-subtitle text-primary">Top Properties</div>
-                <h4 className="mt-4">What’s people say’s</h4>
+                <div className="text-subtitle text-primary">
+                  {translate("home", "testimonial1.tag")}
+                </div>
+                <h4 className="mt-4">
+                  {translate("home", "testimonial1.title")}
+                </h4>
               </div>
               <p className="text-variant-1 p-16">
-                Our seasoned team excels in real estate with years of successful
-                market navigation, offering informed decisions and optimal
-                results.
+                {translate("home", "testimonial1.description")}
               </p>
               <div className="box-navigation">
                 <div className="navigation swiper-nav-next nav-next-testimonial">
@@ -150,11 +154,7 @@ export default function Testimonial1() {
                       </div>
                     </div>
                   </SwiperSlide>
-                  <div
-                    className="swiper-slide wow fadeIn"
-                    data-wow-delay=".6s"
-                    data-wow-duration="2000ms"
-                  >
+                  <SwiperSlide>
                     <div
                       className="box-tes-item wow fadeIn"
                       data-wow-delay=".2s"
@@ -180,7 +180,7 @@ export default function Testimonial1() {
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </SwiperSlide>
                 </Swiper>
               </div>
             </div>

@@ -148,17 +148,44 @@ html {
 * {
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
+  box-sizing: border-box; 
+   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* Font variables for body */
 body {
-  font-family: "DM Sans", sans-serif;
-  font-size: 16px;
-  line-height: 26px;
-  font-weight: 400;
-  color: #161e2d;
-  background-color: #ffffff;
+  font-family: var(--dm), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
+
+/* For Arabic language */
+[dir="rtl"] body {
+  font-family: var(--cairo), 'Segoe UI', Tahoma, Geneva, sans-serif;
+}
+
+/* Headings - use Josefin for English, Cairo for Arabic */
+h1, h2, h3, h4, h5, h6, 
+.title, 
+.heading,
+.fw-7, .fw-6 {
+  font-family: var(--josefin), 'Segoe UI', serif;
+  font-weight: 600;
+}
+
+[dir="rtl"] h1,
+[dir="rtl"] h2,
+[dir="rtl"] h3,
+[dir="rtl"] h4,
+[dir="rtl"] h5,
+[dir="rtl"] h6,
+[dir="rtl"] .title,
+[dir="rtl"] .heading,
+[dir="rtl"] .fw-7,
+[dir="rtl"] .fw-6 {
+  font-family: var(--cairo), 'Segoe UI', Tahoma, Geneva, sans-serif;
+  font-weight: 600;
+}
+
 
 img {
   max-width: 100%;
@@ -589,7 +616,7 @@ label {
 }
 
 .text-success {
-  color: #198754 !important;
+  color: #2a7475 !important;
 }
 
 .text-variant-1 {
@@ -5072,7 +5099,7 @@ label {
 }
 .flag-tag.success {
   color: #ffffff;
-  background-color: #198754;
+  background-color: #2a7475;
 }
 
 .info-box {
@@ -8589,16 +8616,16 @@ label {
 }
 
 .msg-success {
-  color: #198754;
+  color: #2a7475;
 }
 .msg-success .close {
   font-size: 12px;
   margin-left: 10px;
-  color: #198754;
+  color: #2a7475;
 }
 
 #subscribe-msg .notification_ok {
-  color: #198754;
+  color: #2a7475;
 }
 
 /*--------------- dashboard ---------------- */
@@ -8956,7 +8983,7 @@ label {
   line-height: 24px;
   font-weight: 500;
   color: #ffffff;
-  background-color: #198754;
+  background-color: #2a7475;
 }
 .layout-wrap .wrap-table .list-action li:not(:last-child) {
   margin-bottom: 8px;
@@ -10386,3 +10413,235 @@ tr {
 }
 
 /*# sourceMappingURL=styles.css.map */
+
+/* About Us Page */
+/* Add these styles to your global CSS file */
+
+/* Separator */
+.separator {
+  display: flex;
+  align-items: center;
+  width: 150px;
+}
+
+.separator .line {
+  flex: 1;
+  height: 2px;
+  background: #2a7475;
+}
+
+.separator .square {
+  width: 10px;
+  height: 10px;
+  background: #2a7475;
+  transform: rotate(45deg);
+  margin: 0 10px;
+}
+
+/* Hover lift effect */
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Video overlay */
+.video-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  transition: background 0.3s ease;
+}
+
+.banner-video:hover .video-overlay {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* Icon styles */
+.icon-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(25, 135, 84, 0.1);
+  margin-bottom: 1.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .hero-content h1 {
+    font-size: 2.5rem !important;
+  }
+
+  .card-body {
+    padding: 2rem !important;
+  }
+}
+
+/* Custom icons - you need to add these to your icon font or use SVG */
+.icon-target:before {
+  content: "🎯";
+}
+.icon-mission:before {
+  content: "📋";
+}
+.icon-quality:before {
+  content: "⭐";
+}
+.icon-heart:before {
+  content: "❤️";
+}
+.icon-leadership:before {
+  content: "👑";
+}
+.icon-responsibility:before {
+  content: "🤝";
+}
+.icon-partnership:before {
+  content: "🤲";
+}
+.icon-check-circle-fill:before {
+  content: "✓";
+}
+.icon-arrow-right-circle-fill:before {
+  content: "→";
+}
+.bg-primary {
+  background-color: #2a7475 !important;
+}
+
+/* Contact Us Page */
+
+/* Primary Gradient */
+.bg-primary-gradient {
+  background: linear-gradient(135deg, #2a7475 0%, #0d6efd 100%);
+}
+
+/* Form Styling */
+.form-control-lg {
+  padding: 1rem 1.25rem;
+  border: 2px solid #e9ecef;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.form-control-lg:focus {
+  border-color: #2a7475;
+  box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
+}
+
+/* Social Icons */
+.social-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #f8f9fa;
+  color: #2a7475;
+  transition: all 0.3s ease;
+}
+
+.social-icon:hover {
+  background: #2a7475;
+  color: white;
+  transform: translateY(-3px);
+}
+
+/* Icon Box */
+.icon-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 0.5rem;
+  background: rgba(25, 135, 84, 0.1);
+}
+
+/* Contact Item */
+.contact-item {
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.contact-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+/* Quick Links */
+.quick-links a {
+  color: #212529;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.quick-links a:hover {
+  color: #2a7475;
+  padding-left: 0.5rem;
+}
+
+/* Accordion Customization */
+.accordion-button {
+  background: white;
+  font-weight: 600;
+  padding: 1.25rem;
+}
+
+.accordion-button:not(.collapsed) {
+  background: #f8f9fa;
+  color: #2a7475;
+  box-shadow: none;
+}
+
+.accordion-button:focus {
+  box-shadow: none;
+  border-color: #2a7475;
+}
+
+/* Card Hover Effects */
+.card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+/* Testimonial Cards */
+.stars i {
+  margin-right: 0.25rem;
+}
+
+/* Map Container */
+.map-container {
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .contact-form-wrapper,
+  .contact-info-wrapper {
+    margin-bottom: 2rem;
+  }
+
+  .hero-title {
+    font-size: 2.5rem !important;
+  }
+}
+
+/* Loading Button */
+.btn:disabled {
+  opacity: 0.8;
+}

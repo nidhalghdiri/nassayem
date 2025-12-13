@@ -6,7 +6,8 @@
     "contactUs": "اتصل بنا",
     "search": "بحث",
     "properties": "الشقق",
-    "find_properties": "أبحث عن شقة"
+    "find_properties": "أبحث عن شقة",
+    "viewAllProperties": "عرض كل الشقق"
   },
   "labels": {
     "bedrooms": "غرف نوم",

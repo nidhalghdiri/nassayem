@@ -19,11 +19,11 @@ export default function Menu({ currentLocale }) {
     currentMenuItem.includes(path) ? "current" : "";
 
   const menuItems = [
-    { path: "/", id: "nav.home" },
-    { path: "/about-us", id: "nav.about" },
-    { path: "/properties", id: "nav.properties" },
-    { path: "/blog", id: "nav.blog" },
-    { path: "/contact", id: "nav.contact" },
+    { path: `/${currentLocale}`, id: "nav.home" },
+    { path: `/${currentLocale}/about-us`, id: "nav.about" },
+    { path: `/${currentLocale}/properties`, id: "nav.properties" },
+    { path: `/${currentLocale}/blog`, id: "nav.blog" },
+    { path: `/${currentLocale}/contact`, id: "nav.contact" },
   ];
 
   return (

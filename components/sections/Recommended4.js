@@ -337,7 +337,7 @@ export default function Recommended4({ currentLocale }) {
           </div>
           <div className="text-center">
             <Link href="#" className="tf-btn primary size-1">
-              View All Properties
+              {translate("common", "buttons.viewAllProperties")}
             </Link>
           </div>
         </div>

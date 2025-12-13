@@ -18,7 +18,7 @@ export default function VideoPopup({ another }) {
         channel="youtube"
         autoplay
         isOpen={isOpen}
-        videoId="jvBllAFmxUA"
+        videoId="8jJtHBexonM"
         onClose={() => setOpen(false)}
       />
     </>

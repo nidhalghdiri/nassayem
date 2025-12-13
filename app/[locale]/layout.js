@@ -5,7 +5,7 @@ import "@/public/css/swiper-bundle.min.css";
 import "@/public/css/animate.css";
 import "@/public/css/styles.css";
 
-import { DM_Sans, Josefin_Sans } from "next/font/google";
+import { DM_Sans, Josefin_Sans, Cairo } from "next/font/google";
 import Script from "next/script";
 
 const dm = DM_Sans({
@@ -18,6 +18,12 @@ const josefin = Josefin_Sans({
   weight: ["300", "400", "500", "600", "700"],
   subsets: ["latin"],
   variable: "--josefin",
+  display: "swap",
+});
+const cairo = Cairo({
+  weight: ["400", "500", "600", "700"],
+  subsets: ["arabic", "latin"],
+  variable: "--cairo",
   display: "swap",
 });
 
@@ -74,7 +80,11 @@ export default async function LocaleLayout({ children, params }) {
           />
         )}
       </head>
-      <body className={`${dm.variable} ${josefin.variable} body`}>
+      <body
+        className={`${isArabic ? cairo.variable : dm.variable} ${
+          isArabic ? "" : josefin.variable
+        } body`}
+      >
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=AW-17490889277"
           strategy="afterInteractive"

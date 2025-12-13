@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  relationMode = "prisma"
+}
+
+enum UserRole {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum PropertyStatus {
+  AVAILABLE
+  RENTED
+  MAINTENANCE
+  UNAVAILABLE
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  name          String
+  password      String
+  role          UserRole   @default(VIEWER)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  
+  // Relations
+  sessions      Session[]
+  properties    Property[]
+  bookings      Booking[]
+  
+  @@index([email])
+  @@index([role])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  
+  @@index([sessionToken])
+  @@index([userId])
+  @@index([expires])
+}
+
+model Property {
+  id          String         @id @default(cuid())
+  title       String
+  description String
+  price       Float
+  location    String
+  bedrooms    Int
+  bathrooms   Int
+  area        Int            // in square meters
+  status      PropertyStatus @default(AVAILABLE)
+  images      String[]       // JSON array of image URLs
+  amenities   String[]       // JSON array of amenities
+  userId      String
+  user        User           @relation(fields: [userId], references: [id])
+  bookings    Booking[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  
+  // Indexes for better performance
+  @@index([location])
+  @@index([status])
+  @@index([price])
+  @@index([bedrooms])
+  @@index([userId])
+}
+
+model Booking {
+  id          String       @id @default(cuid())
+  propertyId  String
+  property    Property     @relation(fields: [propertyId], references: [id])
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  checkIn     DateTime
+  checkOut    DateTime
+  totalPrice  Float
+  status      BookingStatus @default(PENDING)
+  guests      Int          @default(1)
+  notes       String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  // Indexes for better performance
+  @@index([propertyId])
+  @@index([userId])
+  @@index([status])
+  @@index([checkIn])
+  @@index([checkOut])
+}
+

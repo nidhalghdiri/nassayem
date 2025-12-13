@@ -1,0 +1,38 @@
+{
+  "topFooter": {
+    "followUs": "تابعنا:"
+  },
+  "aboutUs": {
+    "title": "من نحن",
+    "description": "نسائم صلالة هي شركة إدارة عقارية موثوقة تقدم إيجارات قصيرة وطويلة الأجل في صلالة، عُمان. نحن نقدم خدمات ضيافة استثنائية ونسعى لتحقيق رضا العملاء.",
+    "address": "وقد شمالية، صلالة، ظفار، عُمان",
+    "phone": "+968 9899 4036",
+    "email": "nssayemsalalah@gmail.com"
+  },
+  "categories": {
+    "title": "الأقسام",
+    "pricingPlans": "خطط الأسعار",
+    "ourServices": "خدماتنا",
+    "aboutUs": "من نحن",
+    "contactUs": "اتصل بنا"
+  },
+  "ourCompany": {
+    "title": "شركتنا",
+    "propertiesForRent": "عقارات للإيجار",
+    "propertiesForSale": "عقارات للبيع",
+    "ourAgents": "وكلاؤنا",
+    "faqs": "الأسئلة الشائعة"
+  },
+  "newsletter": {
+    "title": "النشرة الإخبارية",
+    "description": "اشترك لتلقي التحديثات حول العروض الحصرية، موسم الخريف، وأفضل العقارات في صلالة.",
+    "placeholder": "أدخل عنوان بريدك الإلكتروني",
+    "button": "اشتراك"
+  },
+  "bottomFooter": {
+    "copyright": "©{year} نسائم صلالة. جميع الحقوق محفوظة.",
+    "termsOfService": "شروط الخدمة",
+    "privacyPolicy": "سياسة الخصوصية",
+    "cookiePolicy": "سياسة ملفات تعريف الارتباط"
+  }
+}

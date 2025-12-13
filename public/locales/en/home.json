@@ -1,22 +1,49 @@
 {
   "hero": {
     "title": "Find Your Stay in Salalah",
-    "subtitle": "We help you find the ideal property for short-term or long-term stays. Explore our wide range of options today.",
-    "searchKeywordPlaceholder": "Enter Keyword...",
-    "searchLocationPlaceholder": "Enter Location...",
-    "findProperties": "Find Properties",
-    "advanced": "Advanced"
+    "subtitle": "We help you find the perfect property for short or long stays. Explore our wide range of options today.",
+    "searchKeywordPlaceholder": "Enter keyword...",
+    "searchLocationPlaceholder": "Enter location...",
+    "advanced": "Advanced",
+    "findProperties": "Find Properties"
   },
   "featured": {
-    "title": "Featured Properties",
-    "subtitle": "Discover our handpicked selection of premium properties"
+    "title": "Featured Apartments",
+    "subtitle": "Discover our carefully curated collection of premium apartments"
   },
   "testimonials": {
-    "title": "What People Say",
+    "title": "Customer Reviews",
     "subtitle": "Hear from our satisfied customers"
+  },
+  "testimonial1": {
+    "tag": "Top Properties",
+    "title": "What's People Say's",
+    "description": "Our seasoned team excels in real estate with years of successful market navigation, offering informed decisions and optimal results."
   },
   "blog": {
     "title": "Latest Articles",
-    "subtitle": "Stay updated with property insights and Salalah news"
+    "subtitle": "Stay updated with apartment news and Salalah updates",
+    "latestNew": "Latest New",
+    "recentArticles": "The Most Recent Articles",
+    "postBy": "by",
+    "in": "in",
+    "articles": {
+      "article1": {
+        "title": "Top 5 Reasons to Rent a Property in Salalah...",
+        "category": "Khareef"
+      },
+      "article2": {
+        "title": "A Guide to Finding Your Perfect Rental...",
+        "category": "Rent"
+      },
+      "article3": {
+        "title": "Exploring Salalah's Best Neighborhoods...",
+        "category": "Salalah"
+      },
+      "article4": {
+        "title": "Tips for Travelers: What to Expect...",
+        "category": "Travel"
+      }
+    }
   }
 }

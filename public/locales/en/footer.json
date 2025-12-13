@@ -1,0 +1,38 @@
+{
+  "topFooter": {
+    "followUs": "Follow Us:"
+  },
+  "aboutUs": {
+    "title": "About Us",
+    "description": "Nassayem Salalah is a trusted property management company offering short-term and long-term rentals in Salalah, Oman. We provide exceptional hospitality services and ensure customer satisfaction.",
+    "address": "Ouked Shamaliya, Salalah, Dhofar, Oman",
+    "phone": "+968 9899 4036",
+    "email": "nssayemsalalah@gmail.com"
+  },
+  "categories": {
+    "title": "Categories",
+    "pricingPlans": "Pricing Plans",
+    "ourServices": "Our Services",
+    "aboutUs": "About Us",
+    "contactUs": "Contact Us"
+  },
+  "ourCompany": {
+    "title": "Our Company",
+    "propertiesForRent": "Properties for Rent",
+    "propertiesForSale": "Properties for Sale",
+    "ourAgents": "Our Agents",
+    "faqs": "FAQs"
+  },
+  "newsletter": {
+    "title": "Newsletter",
+    "description": "Subscribe to receive updates on exclusive offers, Khareef season, and the best properties in Salalah.",
+    "placeholder": "Enter your email address",
+    "button": "Subscribe"
+  },
+  "bottomFooter": {
+    "copyright": "©{year} Nassayem Salalah. All Rights Reserved.",
+    "termsOfService": "Terms of Service",
+    "privacyPolicy": "Privacy Policy",
+    "cookiePolicy": "Cookie Policy"
+  }
+}
