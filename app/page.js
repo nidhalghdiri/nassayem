@@ -1,10 +1,9 @@
-// This is a SERVER COMPONENT - no 'use client'
 import { redirect } from "next/navigation";
 
+// This is a server component
 export default function RootPage() {
-  console.log("Root page redirecting to /en");
+  // This will only run if middleware fails
   redirect("/en");
 
-  // This won't render because redirect happens first
   return null;
 }

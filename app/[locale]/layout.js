@@ -69,6 +69,21 @@ export default async function LocaleLayout({ children, params }) {
   const { locale } = params;
   const isArabic = locale === "ar";
 
+  // Validate locale
+  if (!["en", "ar"].includes(locale)) {
+    return (
+      <html lang="en">
+        <body>
+          <div style={{ padding: "20px", textAlign: "center" }}>
+            <h1>Invalid Language</h1>
+            <p>Redirecting to English version...</p>
+            <meta httpEquiv="refresh" content="2;url=/en" />
+          </div>
+        </body>
+      </html>
+    );
+  }
+
   return (
     <html lang={locale} dir={isArabic ? "rtl" : "ltr"}>
       <head>
@@ -79,12 +94,17 @@ export default async function LocaleLayout({ children, params }) {
             rel="stylesheet"
           />
         )}
+
+        {/* Add language-specific meta tags */}
+        <meta property="og:locale" content={isArabic ? "ar_AR" : "en_US"} />
+        <meta name="language" content={locale} />
       </head>
       <body
         className={`${isArabic ? cairo.variable : dm.variable} ${
           isArabic ? "" : josefin.variable
         } body`}
       >
+        {/* Google Analytics Script */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=AW-17490889277"
           strategy="afterInteractive"

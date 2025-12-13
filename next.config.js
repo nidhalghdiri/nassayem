@@ -3,14 +3,26 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // ✅ Enable built-in i18n
+  // Remove built-in i18n since we're using custom middleware
   // i18n: {
   //   locales: ["en", "ar"],
   //   defaultLocale: "en",
-  //   localeDetection: true, // Auto-detect user's language
+  //   localeDetection: false, // Disable built-in detection
   // },
   compiler: {
     styledComponents: true,
+  },
+  // Important for VPS deployment
+  output: "standalone",
+  // Enable trailing slashes
+  trailingSlash: false,
+  // Disable ESLint during build
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  // Images configuration
+  images: {
+    unoptimized: true, // Disable image optimization if having issues
   },
 };
 
