@@ -1,4 +1,3 @@
-// app/properties/page.js - FIXED VERSION
 "use client";
 
 import { useState, useEffect } from "react";
@@ -31,10 +30,18 @@ export default function PropertiesPage() {
   const fetchProperties = async () => {
     try {
       const response = await fetch("/api/properties");
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
       const data = await response.json();
-      setProperties(data);
+
+      // Ensure data is always an array
+      setProperties(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error fetching properties:", error);
+      setProperties([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -379,7 +386,6 @@ function PropertyForm({ onSubmit, initialData = {}, buttonText = "Submit" }) {
   );
 }
 
-// Fixed PropertyList component (no emoji hydration issues)
 function PropertyList({ properties, onEdit, onDelete }) {
   return (
     <div className="space-y-4">
@@ -447,11 +453,30 @@ function PropertyList({ properties, onEdit, onDelete }) {
 
           <p className="mt-2 text-gray-700">{property.description}</p>
           <div className="mt-2 text-xs text-gray-400">
-            Created: {new Date(property.createdAt).toLocaleDateString()} | By:{" "}
-            {property.user?.name || "Unknown"}
+            {/* FIXED: Use useEffect to format dates on client only */}
+            <PropertyDate property={property} />
           </div>
         </div>
       ))}
     </div>
+  );
+}
+
+// NEW: Separate component for client-side date formatting
+function PropertyDate({ property }) {
+  const [formattedDate, setFormattedDate] = useState("");
+
+  useEffect(() => {
+    // This only runs on the client
+    if (property.createdAt) {
+      setFormattedDate(new Date(property.createdAt).toLocaleDateString());
+    }
+  }, [property.createdAt]);
+
+  return (
+    <>
+      Created: {formattedDate || "Loading date..."} | By:{" "}
+      {property.user?.name || "Unknown"}
+    </>
   );
 }
