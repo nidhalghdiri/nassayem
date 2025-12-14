@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: true,
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -11,6 +12,7 @@ const nextConfig = {
   // },
   compiler: {
     styledComponents: true,
+    removeConsole: process.env.NODE_ENV === "production",
   },
   // Important for VPS deployment
   output: "standalone",
