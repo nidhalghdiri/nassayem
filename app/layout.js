@@ -1,5 +1,5 @@
 import { DM_Sans } from "next/font/google";
-import { Providers } from "./providers";
+import AuthProvider from "./providers/SessionProvider";
 
 const dm = DM_Sans({
   weight: ["400", "500", "600", "700"],
@@ -48,7 +48,7 @@ export default function RootLayout({ children }) {
         <link rel="canonical" href="https://nassayem.com" />
       </head>
       <body>
-        <Providers>{children}</Providers>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

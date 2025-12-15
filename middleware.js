@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { match } from "@formatjs/intl-localematcher";
 import Negotiator from "negotiator";
+import { getToken } from "next-auth/jwt";
 
 const locales = ["en", "ar"];
 const defaultLocale = "en";
+const protectedRoutes = ["/dashboard", "/admin", "/profile", "/settings"];
 
 // Function to get locale from request headers
 function getLocale(request) {
@@ -24,7 +26,26 @@ function getLocale(request) {
   }
 }
 
-export function middleware(request) {
+// Check if a path is protected (considering locale prefixes)
+function isProtectedRoute(pathname) {
+  // Remove locale prefix if present
+  let pathWithoutLocale = pathname;
+  for (const locale of locales) {
+    if (pathname.startsWith(`/${locale}/`)) {
+      pathWithoutLocale = pathname.substring(locale.length + 2);
+      break;
+    } else if (pathname === `/${locale}`) {
+      pathWithoutLocale = "/";
+      break;
+    }
+  }
+  return protectedRoutes.some(
+    (route) =>
+      pathWithoutLocale === route || pathWithoutLocale.startsWith(`${route}/`)
+  );
+}
+
+export async function middleware(request) {
   const { pathname } = request.nextUrl;
 
   console.log(`🔄 Middleware triggered for: ${pathname}`);
@@ -47,6 +68,28 @@ export function middleware(request) {
     return NextResponse.next();
   }
 
+  if (isProtectedRoute(pathname)) {
+    try {
+      console.log("⏩⏩⏩⏩⏩⏩⏩⏩⏩⏩⏩ is Protected Route: ", pathname);
+      // Get the JWT token
+      const token = await getToken({
+        req: request,
+        secret: process.env.NEXTAUTH_SECRET,
+      });
+      console.log("⏩⏩⏩⏩⏩⏩⏩⏩⏩⏩⏩ Token: ", token);
+      if (!token) {
+        const loginUrl = new URL("/login", request.url);
+        loginUrl.searchParams.set("callbackUrl", request.url.toString());
+        return NextResponse.redirect(loginUrl);
+      }
+    } catch (error) {
+      console.error("Auth check error:", error);
+      // On error, still redirect to login for safety
+      const loginUrl = new URL("/login", request.url);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
   // Check if pathname already has a locale
   const pathnameHasLocale = locales.some(
     (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
@@ -54,6 +97,17 @@ export function middleware(request) {
 
   if (pathnameHasLocale) {
     console.log(`✅ Path already has locale: ${pathname}`);
+    if (pathname == "/en/login" || pathname == "/ar/login") {
+      const token = await getToken({
+        req: request,
+        secret: process.env.NEXTAUTH_SECRET,
+      });
+      if (token) {
+        const adminUrl = new URL("/admin", request.url);
+        adminUrl.searchParams.set("callbackUrl", request.url.toString());
+        return NextResponse.redirect(adminUrl);
+      }
+    }
     return NextResponse.next();
   }
 
