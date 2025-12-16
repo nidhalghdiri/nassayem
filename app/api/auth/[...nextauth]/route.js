@@ -25,6 +25,16 @@ export const authOptions = {
           const user = await prisma.user.findUnique({
             where: {
               email: credentials.email.toLowerCase(),
+              isActive: true,
+            },
+            include: {
+              building: {
+                select: {
+                  id: true,
+                  name: true,
+                  address: true,
+                },
+              },
             },
           });
           console.log("Founded User: ", user);
@@ -40,11 +50,11 @@ export const authOptions = {
           }
 
           // Verify password
-          // const isValid = await bcrypt.compare(
-          //   credentials.password,
-          //   user.password
-          // );
-          const isValid = credentials.password == user.password;
+          const isValid = await bcrypt.compare(
+            credentials.password,
+            user.password
+          );
+          // const isValid = credentials.password == user.password;
 
           if (!isValid) {
             console.error("Invalid password for user:", credentials.email);
@@ -57,6 +67,10 @@ export const authOptions = {
             email: user.email,
             name: user.name,
             role: user.role,
+            building: user.buildingId,
+            building: user.building, // Include building object
+            phone: user.phone,
+            avatar: user.avatar,
           };
         } catch (error) {
           console.error("Authorization error:", error);
@@ -71,12 +85,18 @@ export const authOptions = {
     error: "/en/login",
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       // Initial sign in
       if (user) {
         token.id = user.id;
         token.role = user.role;
-        token.email = user.email;
+        token.buildingId = user.buildingId;
+        token.building = user.building; // Add building data
+        token.phone = user.phone;
+        token.avatar = user.avatar;
+      }
+      if (trigger === "update" && session) {
+        token = { ...token, ...session };
       }
       return token;
     },
@@ -84,7 +104,10 @@ export const authOptions = {
       if (session?.user) {
         session.user.id = token.id;
         session.user.role = token.role;
-        session.user.email = token.email;
+        session.user.buildingId = token.buildingId;
+        session.user.building = token.building; // Add to session
+        session.user.phone = token.phone;
+        session.user.avatar = token.avatar;
       }
       return session;
     },

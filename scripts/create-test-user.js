@@ -20,8 +20,6 @@ async function createTestUser() {
     console.log("Test user created:", user);
   } catch (error) {
     console.error("Error creating user:", error);
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
