@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useTranslations } from "@/lib/translations";
+import { useTranslations } from "../../lib/translations";
 
 export default function Menu({ currentLocale }) {
   const pathname = usePathname();

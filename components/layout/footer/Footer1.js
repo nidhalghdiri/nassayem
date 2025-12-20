@@ -1,4 +1,4 @@
-import { useTranslations } from "@/lib/translations";
+import { useTranslations } from "../../../lib/translations";
 import Link from "next/link";
 
 export default function Footer1({ currentLocale }) {

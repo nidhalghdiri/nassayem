@@ -1,7 +1,7 @@
 "use client";
-import VideoPopup from "@/components/elements/VideoPopup";
-import Layout from "@/components/layout/Layout";
-import { useTranslations } from "@/lib/translations";
+import VideoPopup from "../../../components/elements/VideoPopup";
+import Layout from "../../../components/layout/Layout";
+import { useTranslations } from "../../../lib/translations";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";

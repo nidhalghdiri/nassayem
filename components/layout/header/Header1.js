@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import LanguageSwitcher from "../../LanguageSwitcher";
 import Menu from "../Menu";
 import MobileMenu from "../MobileMenu";
-import { useTranslations } from "@/lib/translations";
+import { useTranslations } from "../../../lib/translations";
 
 export default function Header1({
   scroll,

@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import RangeSlider from "./RangeSlider";
-import { useTranslations } from "@/lib/translations";
+import { useTranslations } from "../../lib/translations";
 import { usePathname } from "next/navigation";
 
 export default function AdvancedFilter({ sidecls, currentLocale }) {

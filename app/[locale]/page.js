@@ -1,11 +1,11 @@
 // app/[locale]/page.js
 "use client";
 
-import Layout from "@/components/layout/Layout";
-import Slider1 from "@/components/sections/Slider1";
-import Recommended4 from "@/components/sections/Recommended4";
-import Testimonial1 from "@/components/sections/Testimonial1";
-import LatestNew3 from "@/components/sections/LatestNew3";
+import Layout from "../../components/layout/Layout";
+import Slider1 from "../../components/sections/Slider1";
+import Recommended4 from "../../components/sections/Recommended4";
+import Testimonial1 from "../../components/sections/Testimonial1";
+import LatestNew3 from "../../components/sections/LatestNew3";
 import { useParams, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 

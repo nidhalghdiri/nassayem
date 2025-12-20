@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import Layout from "@/components/layout/Layout";
-import { useTranslations } from "@/lib/translations";
+import Layout from "../../../components/layout/Layout";
+import { useTranslations } from "../../../lib/translations";
 
 export default function PropertiesPage() {
   const pathname = usePathname();

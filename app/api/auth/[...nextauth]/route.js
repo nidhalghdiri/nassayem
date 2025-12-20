@@ -1,14 +1,14 @@
 // app/api/auth/[...nextauth]/route.js
 import NextAuth, { AuthOptions } from "next-auth";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import CredentialsProvider from "next-auth/providers/credentials";
+import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "../../../../lib/prisma";
 
 // IMPORTANT: Don't use the adapter with credentials provider unless you're using database sessions
 export const authOptions = {
   providers: [
-    CredentialsProvider({
+    Credentials({
       name: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },
@@ -21,19 +21,20 @@ export const authOptions = {
             throw new Error("Email and password required");
           }
 
-          console.log(
-            "Looking for user with email:",
-            credentials.email.toLowerCase()
-          );
-          console.log(
-            "Available prisma.user fields:",
-            Object.keys(prisma.user.fields)
-          );
-
           // Find user
           const user = await prisma.user.findUnique({
             where: {
               email: credentials.email.toLowerCase(),
+              isActive: true,
+            },
+            include: {
+              building: {
+                select: {
+                  id: true,
+                  name: true,
+                  address: true,
+                },
+              },
             },
           });
           console.log("Founded User: ", user);
@@ -66,6 +67,10 @@ export const authOptions = {
             email: user.email,
             name: user.name,
             role: user.role,
+            building: user.buildingId,
+            building: user.building, // Include building object
+            phone: user.phone,
+            avatar: user.avatar,
           };
         } catch (error) {
           console.error("Authorization error:", error);
@@ -80,12 +85,18 @@ export const authOptions = {
     error: "/en/login",
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       // Initial sign in
       if (user) {
         token.id = user.id;
         token.role = user.role;
-        token.email = user.email;
+        token.buildingId = user.buildingId;
+        token.building = user.building; // Add building data
+        token.phone = user.phone;
+        token.avatar = user.avatar;
+      }
+      if (trigger === "update" && session) {
+        token = { ...token, ...session };
       }
       return token;
     },
@@ -93,7 +104,10 @@ export const authOptions = {
       if (session?.user) {
         session.user.id = token.id;
         session.user.role = token.role;
-        session.user.email = token.email;
+        session.user.buildingId = token.buildingId;
+        session.user.building = token.building; // Add to session
+        session.user.phone = token.phone;
+        session.user.avatar = token.avatar;
       }
       return session;
     },

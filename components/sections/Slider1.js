@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import TextTransition, { presets } from "react-text-transition";
 import AdvancedFilter from "../elements/AdvancedFilter";
 import TabNav from "../elements/TabNav";
-import { useTranslations } from "@/lib/translations";
+import { useTranslations } from "../../lib/translations";
 const TEXTS = ["Space", "Stay ", "Rental"];
 const TEXTS_AR = ["إقامتك", "راحتك ", "شقتك"];
 export default function Slider1({ currentLocale }) {
