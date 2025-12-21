@@ -13,7 +13,8 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = params.id;
+    const { id } = await params;
+    const userId = id;
 
     // Get user with related data
     const user = await prisma.user.findUnique({

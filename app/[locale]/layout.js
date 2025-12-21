@@ -27,12 +27,6 @@ const cairo = Cairo({
   display: "swap",
 });
 
-export const dynamicParams = false;
-
-export function generateStaticParams() {
-  return [{ locale: "en" }, { locale: "ar" }];
-}
-
 export const metadata = {
   title: "Nassayem Salalah - Your Trusted Property Management Partner",
   description:
