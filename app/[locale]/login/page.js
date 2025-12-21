@@ -40,8 +40,7 @@ export default function LoginPage() {
         redirect: false,
         callbackUrl,
       });
-
-      console.log("SignIn result:", result);
+      console.log("Full SignIn Result:", result);
 
       if (result?.error) {
         setError(
@@ -49,6 +48,8 @@ export default function LoginPage() {
             ? "Invalid email or password"
             : result.error
         );
+        console.error("Sign-in error details:", result);
+
         setLoading(false);
         return;
       }
