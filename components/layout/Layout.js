@@ -12,6 +12,7 @@ import Footer1 from "./footer/Footer1";
 import Footer2 from "./footer/Footer2";
 import Header1 from "./header/Header1";
 import Header2 from "./header/Header2";
+import { useWow } from "@/hooks/useWow";
 
 export default function Layout({
   headerStyle,
@@ -22,6 +23,15 @@ export default function Layout({
   currentLocale,
 }) {
   const [scroll, setScroll] = useState(0);
+  useWow();
+  useEffect(() => {
+    const handleScroll = () => {
+      setScroll(window.scrollY > 100);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
   // Mobile Menu
   const [isMobileMenu, setMobileMenu] = useState(false);
   const handleMobileMenu = () => {
@@ -64,20 +74,6 @@ export default function Layout({
   const [isOffcanMobile, setOffcanMobile] = useState(false);
   const handleOffcanMobile = () => setOffcanMobile(!isOffcanMobile);
 
-  useEffect(() => {
-    const WOW = require("wowjs");
-    window.wow = new WOW.WOW({
-      live: false,
-    });
-    window.wow.init();
-
-    document.addEventListener("scroll", () => {
-      const scrollCheck = window.scrollY > 100;
-      if (scrollCheck !== scroll) {
-        setScroll(scrollCheck);
-      }
-    });
-  }, []);
   return (
     <>
       <div id="top" />

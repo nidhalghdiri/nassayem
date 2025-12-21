@@ -1,5 +1,5 @@
 "use client";
-import { useTranslations } from "../../lib/translations";
+import { useTranslations } from "@/lib/translations";
 import { Autoplay, Navigation, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 

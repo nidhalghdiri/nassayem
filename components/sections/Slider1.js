@@ -1,22 +1,24 @@
 "use client";
 import { useEffect, useState } from "react";
-import TextTransition, { presets } from "react-text-transition";
+import { motion, AnimatePresence } from "framer-motion"; // Replace react-text-transition
 import AdvancedFilter from "../elements/AdvancedFilter";
 import TabNav from "../elements/TabNav";
-import { useTranslations } from "../../lib/translations";
-const TEXTS = ["Space", "Stay ", "Rental"];
-const TEXTS_AR = ["إقامتك", "راحتك ", "شقتك"];
+import { useTranslations } from "@/lib/translations";
+
+const TEXTS = ["Space", "Stay", "Rental"];
+const TEXTS_AR = ["إقامتك", "راحتك", "شقتك"];
+
 export default function Slider1({ currentLocale }) {
-  const [index, setIndex] = useState(1);
+  const [index, setIndex] = useState(0);
   const translate = useTranslations(currentLocale);
 
   useEffect(() => {
-    const intervalId = setInterval(
-      () => setIndex((index) => index + 1),
-      3000 // every 3 seconds
-    );
-    return () => clearTimeout(intervalId);
+    const intervalId = setInterval(() => {
+      setIndex((prevIndex) => (prevIndex + 1) % TEXTS.length);
+    }, 3000);
+    return () => clearInterval(intervalId);
   }, []);
+
   return (
     <>
       <section className="flat-slider home-1">
@@ -29,12 +31,16 @@ export default function Slider1({ currentLocale }) {
                     <h1 className="text-white animationtext slide">
                       ابحث عن
                       <span className="tf-text s1 cd-words-wrapper ms-3">
-                        <TextTransition
-                          springConfig={presets.wobbly}
-                          style={{ color: "#2a7475" }}
+                        <motion.span
+                          key={index}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          transition={{ duration: 0.5 }}
+                          style={{ color: "#2a7475", display: "inline-block" }}
                         >
-                          &nbsp;{TEXTS_AR[index % TEXTS.length]}
-                        </TextTransition>
+                          &nbsp;{TEXTS_AR[index]}
+                        </motion.span>
                       </span>
                       &nbsp;في صلالة
                     </h1>
@@ -42,12 +48,16 @@ export default function Slider1({ currentLocale }) {
                     <h1 className="text-white animationtext slide">
                       Find Your
                       <span className="tf-text s1 cd-words-wrapper ms-3">
-                        <TextTransition
-                          springConfig={presets.wobbly}
-                          style={{ color: "#2a7475" }}
+                        <motion.span
+                          key={index}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          transition={{ duration: 0.5 }}
+                          style={{ color: "#2a7475", display: "inline-block" }}
                         >
-                          {TEXTS[index % TEXTS.length]}
-                        </TextTransition>
+                          {TEXTS[index]}
+                        </motion.span>
                       </span>
                       &nbsp;in Salalah
                     </h1>
@@ -61,23 +71,7 @@ export default function Slider1({ currentLocale }) {
                     {translate("home", "hero.subtitle")}
                   </p>
                 </div>
-                <div className="flat-tab flat-tab-form">
-                  {/* <ul className="nav-tab-form style-1 justify-content-center" role="tablist">
-										<TabNav />
-									</ul> */}
-                  <div className="tab-content">
-                    <div className="tab-pane fade active show" role="tabpanel">
-                      <div className="form-sl">
-                        <form method="post">
-                          <AdvancedFilter
-                            sidecls="shadow-st"
-                            currentLocale={currentLocale}
-                          />
-                        </form>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                {/* Rest of your component */}
               </div>
             </div>
           </div>

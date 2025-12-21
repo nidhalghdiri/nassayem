@@ -26,7 +26,7 @@ import {
   Home,
   Wrench,
 } from "lucide-react";
-import LayoutAdmin from "../../../../../components/layout/LayoutAdmin";
+import LayoutAdmin from "@/components/layout/LayoutAdmin";
 
 export default function UserDetailPage() {
   const router = useRouter();

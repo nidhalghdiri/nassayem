@@ -19,7 +19,7 @@ import {
   AlertCircle,
   Info,
 } from "lucide-react";
-import LayoutAdmin from "../../../../../components/layout/LayoutAdmin";
+import LayoutAdmin from "@/components/layout/LayoutAdmin";
 
 export default function NewUserPage() {
   const router = useRouter();

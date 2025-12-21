@@ -5,8 +5,8 @@ import { useEffect, useState } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import Layout from "../../../components/layout/Layout";
-import { useTranslations } from "../../../lib/translations";
+import Layout from "@/components/layout/Layout";
+import { useTranslations } from "@/lib/translations";
 
 export default function LoginPage() {
   const pathname = usePathname();

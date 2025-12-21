@@ -22,7 +22,7 @@ import {
   Bell,
   FileText,
 } from "lucide-react";
-import LayoutAdmin from "../../../../../components/layout/LayoutAdmin";
+import LayoutAdmin from "@/components/layout/LayoutAdmin";
 
 export default function EditUserPage() {
   const router = useRouter();

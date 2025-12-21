@@ -1,16 +1,235 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String         @id @default(cuid())
+  email          String         @unique
+  emailVerified  DateTime?
+  name           String
+  password       String
+  role           UserRole       @default(HOUSEKEEPING)
+  phone          String?
+  avatar         String?
+  isActive       Boolean        @default(true)
+  lastLogin      DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  buildingId     String?
+  accounts       Account[]
+  bookings       Booking[]
+  inspections    Inspection[]
+  notifications  Notification[]
+  uploadedPhotos Photo[]        @relation("UploadedPhotos")
+  sessions       Session[]
+  assignedTasks  Task[]         @relation("AssignedTasks")
+  createdTasks   Task[]         @relation("CreatedTasks")
+  escalatedTasks Task[]         @relation("EscalatedTasks")
+  taskNotes      TaskNote[]
+  units          Unit[]
+  building       Building?      @relation(fields: [buildingId], references: [id])
+
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([sessionToken])
+  @@index([userId])
+  @@index([expires])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Building {
+  id        String   @id @default(cuid())
+  name      String
+  address   String?
+  createdAt DateTime @default(now())
+  tasks     Task[]
+  units     Unit[]
+  users     User[]
+}
+
+model Unit {
+  id          String       @id @default(cuid())
+  title       String
+  description String
+  price       Float
+  location    String
+  floor       String
+  bedrooms    Int
+  bathrooms   Int
+  area        Int
+  status      UnitStatus   @default(AVAILABLE)
+  buildingId  String
+  images      String[]
+  amenities   String[]
+  userId      String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  bookings    Booking[]
+  inspections Inspection[]
+  tasks       Task[]
+  building    Building     @relation(fields: [buildingId], references: [id])
+  user        User         @relation(fields: [userId], references: [id])
+
+  @@index([location])
+  @@index([status])
+  @@index([price])
+  @@index([bedrooms])
+  @@index([userId])
+}
+
+model Task {
+  id               String         @id @default(cuid())
+  title            String
+  description      String?
+  type             TaskType
+  status           TaskStatus     @default(PENDING)
+  priority         Priority       @default(MEDIUM)
+  createdById      String
+  assignedToId     String?
+  unitId           String
+  buildingId       String
+  dueDate          DateTime?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  estimatedMinutes Int?
+  actualMinutes    Int?
+  maintenanceType  String?
+  costEstimate     Decimal?       @db.Decimal(10, 2)
+  actualCost       Decimal?       @db.Decimal(10, 2)
+  notes            String?
+  escalatedToId    String?
+  escalationReason String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  inspections      Inspection[]
+  notifications    Notification[]
+  photos           Photo[]
+  assignedTo       User?          @relation("AssignedTasks", fields: [assignedToId], references: [id])
+  building         Building       @relation(fields: [buildingId], references: [id])
+  createdBy        User           @relation("CreatedTasks", fields: [createdById], references: [id])
+  escalatedTo      User?          @relation("EscalatedTasks", fields: [escalatedToId], references: [id])
+  unit             Unit           @relation(fields: [unitId], references: [id])
+  taskNotes        TaskNote[]
+
+  @@index([status])
+  @@index([type])
+  @@index([priority])
+  @@index([assignedToId])
+  @@index([unitId])
+  @@index([dueDate])
+  @@index([createdById])
+  @@index([escalatedToId])
+  @@index([buildingId, status])
+}
+
+model Photo {
+  id           String   @id @default(cuid())
+  url          String
+  taskId       String
+  uploadedById String
+  createdAt    DateTime @default(now())
+  task         Task     @relation(fields: [taskId], references: [id])
+  uploadedBy   User     @relation("UploadedPhotos", fields: [uploadedById], references: [id])
+}
+
+model TaskNote {
+  id        String   @id @default(cuid())
+  content   String
+  taskId    String
+  authorId  String
+  createdAt DateTime @default(now())
+  author    User     @relation(fields: [authorId], references: [id])
+  task      Task     @relation(fields: [taskId], references: [id])
+}
+
+model Inspection {
+  id          String   @id @default(cuid())
+  unitId      String
+  inspectorId String
+  status      String
+  score       Int?
+  notes       String?
+  taskId      String?
+  createdAt   DateTime @default(now())
+  inspector   User     @relation(fields: [inspectorId], references: [id])
+  task        Task?    @relation(fields: [taskId], references: [id])
+  unit        Unit     @relation(fields: [unitId], references: [id])
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  type        String
+  title       String
+  message     String
+  recipientId String
+  read        Boolean  @default(false)
+  taskId      String?
+  createdAt   DateTime @default(now())
+  recipient   User     @relation(fields: [recipientId], references: [id])
+  task        Task?    @relation(fields: [taskId], references: [id])
+}
+
+model Booking {
+  id         String        @id @default(cuid())
+  userId     String
+  checkIn    DateTime
+  checkOut   DateTime
+  totalPrice Float
+  status     BookingStatus @default(PENDING)
+  guests     Int           @default(1)
+  notes      String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  unitId     String
+  unit       Unit          @relation(fields: [unitId], references: [id])
+  user       User          @relation(fields: [userId], references: [id])
+
+  @@index([unitId])
+  @@index([userId])
+  @@index([status])
+  @@index([checkIn])
+  @@index([checkOut])
 }
 
 enum UserRole {
@@ -43,265 +262,11 @@ enum Priority {
   URGENT
 }
 
-model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  emailVerified DateTime?
-  name          String
-  password      String
-  role          UserRole  @default(HOUSEKEEPING)
-  phone         String?
-  avatar        String?
-  buildingId    String?
-  building      Building? @relation(fields: [buildingId], references: [id])
-  isActive      Boolean   @default(true)
-  lastLogin     DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  // Relations
-  units    Unit[]
-  bookings Booking[]
-  sessions Session[]
-  accounts Account[]
-
-  // Task relations - FIXED
-  createdTasks   Task[]     @relation("CreatedTasks") // Tasks created by this user
-  assignedTasks  Task[]     @relation("AssignedTasks") // Tasks assigned to this user
-  escalatedTasks Task[]     @relation("EscalatedTasks") // Tasks escalated to this user
-  uploadedPhotos Photo[]    @relation("UploadedPhotos") // Photos uploaded by this user
-  taskNotes      TaskNote[] // Notes created by this user
-
-  // Inspection relations
-  inspections Inspection[]
-
-  // Notification relations
-  notifications Notification[]
-
-  @@index([email])
-  @@index([role])
-  @@index([isActive])
-}
-
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt    DateTime @default(now())
-
-  @@index([sessionToken])
-  @@index([userId])
-  @@index([expires])
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-}
-
-model Building {
-  id        String   @id @default(cuid())
-  name      String
-  address   String?
-  units     Unit[]
-  users     User[]
-  tasks     Task[]
-  createdAt DateTime @default(now())
-}
-
-model Unit {
-  id          String     @id @default(cuid())
-  title       String
-  description String
-  price       Float
-  location    String
-  floor       String
-  bedrooms    Int
-  bathrooms   Int
-  area        Int // in square meters
-  status      UnitStatus @default(AVAILABLE)
-  buildingId  String
-  building    Building   @relation(fields: [buildingId], references: [id])
-  images      String[] // JSON array of image URLs
-  amenities   String[] // JSON array of amenities
-
-  // Relations - FIXED
-  tasks       Task[]
-  inspections Inspection[]
-
-  userId   String
-  user     User      @relation(fields: [userId], references: [id])
-  bookings Booking[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Indexes for better performance
-  @@index([location])
-  @@index([status])
-  @@index([price])
-  @@index([bedrooms])
-  @@index([userId])
-}
-
 enum UnitStatus {
   AVAILABLE
   RENTED
   MAINTENANCE
   UNAVAILABLE
-}
-
-model Task {
-  id          String     @id @default(cuid())
-  title       String
-  description String?
-  type        TaskType
-  status      TaskStatus @default(PENDING)
-  priority    Priority   @default(MEDIUM)
-
-  // Assignments
-  createdById  String
-  createdBy    User     @relation("CreatedTasks", fields: [createdById], references: [id])
-  assignedToId String?
-  assignedTo   User?    @relation("AssignedTasks", fields: [assignedToId], references: [id])
-  unitId       String
-  unit         Unit     @relation(fields: [unitId], references: [id])
-  buildingId   String
-  building     Building @relation(fields: [buildingId], references: [id])
-
-  // Tracking
-  dueDate          DateTime?
-  startedAt        DateTime?
-  completedAt      DateTime?
-  estimatedMinutes Int?
-  actualMinutes    Int?
-
-  // Media
-  photos    Photo[]
-  taskNotes TaskNote[]
-
-  // Maintenance specific
-  maintenanceType String?
-  costEstimate    Decimal? @db.Decimal(10, 2)
-  actualCost      Decimal? @db.Decimal(10, 2)
-  notes           String?
-
-  // Escalation
-  escalatedToId    String?
-  escalatedTo      User?   @relation("EscalatedTasks", fields: [escalatedToId], references: [id])
-  escalationReason String?
-
-  inspections Inspection[]
-
-  // Notifications relation - FIXED
-  notifications Notification[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([status])
-  @@index([type])
-  @@index([priority])
-  @@index([assignedToId])
-  @@index([unitId])
-  @@index([dueDate])
-  @@index([createdById])
-  @@index([escalatedToId])
-  @@index([buildingId, status])
-}
-
-model Photo {
-  id           String   @id @default(cuid())
-  url          String
-  taskId       String
-  task         Task     @relation(fields: [taskId], references: [id])
-  uploadedById String
-  uploadedBy   User     @relation("UploadedPhotos", fields: [uploadedById], references: [id])
-  createdAt    DateTime @default(now())
-}
-
-model TaskNote {
-  id        String   @id @default(cuid())
-  content   String
-  taskId    String
-  task      Task     @relation(fields: [taskId], references: [id])
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id])
-  createdAt DateTime @default(now())
-}
-
-model Inspection {
-  id          String  @id @default(cuid())
-  unitId      String
-  unit        Unit    @relation(fields: [unitId], references: [id])
-  inspectorId String
-  inspector   User    @relation(fields: [inspectorId], references: [id])
-  status      String // "passed", "failed", "pending"
-  score       Int?
-  notes       String?
-  taskId      String?
-  task        Task?   @relation(fields: [taskId], references: [id])
-
-  createdAt DateTime @default(now())
-}
-
-model Notification {
-  id          String   @id @default(cuid())
-  type        String // "task_assigned", "task_completed", "escalation", "inspection_due"
-  title       String
-  message     String
-  recipientId String
-  recipient   User     @relation(fields: [recipientId], references: [id])
-  read        Boolean  @default(false)
-  taskId      String?
-  task        Task?    @relation(fields: [taskId], references: [id])
-  createdAt   DateTime @default(now())
-}
-
-model Booking {
-  id         String        @id @default(cuid())
-  unitId     String
-  unit       Unit          @relation(fields: [unitId], references: [id])
-  userId     String
-  user       User          @relation(fields: [userId], references: [id])
-  checkIn    DateTime
-  checkOut   DateTime
-  totalPrice Float
-  status     BookingStatus @default(PENDING)
-  guests     Int           @default(1)
-  notes      String?
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
-
-  // Indexes for better performance
-  @@index([unitId])
-  @@index([userId])
-  @@index([status])
-  @@index([checkIn])
-  @@index([checkOut])
 }
 
 enum BookingStatus {

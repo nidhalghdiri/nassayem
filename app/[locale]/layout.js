@@ -1,11 +1,10 @@
-import "../../public/css/bootstrap.min.css";
-import "../../public/fonts/font-icons.css";
-import "../../public/fonts/fonts.css";
-import "../../public/css/swiper-bundle.min.css";
-import "../../public/css/animate.css";
-import "../../public/css/styles.css";
-import "../../public/css/dashboard.css";
-
+import "@/public/css/bootstrap.min.css";
+import "@/public/fonts/font-icons.css";
+import "@/public/fonts/fonts.css";
+import "@/public/css/swiper-bundle.min.css";
+import "@/public/css/animate.css";
+import "@/public/css/styles.css";
+import "@/public/css/dashboard.css";
 import { DM_Sans, Josefin_Sans, Cairo } from "next/font/google";
 import Script from "next/script";
 
@@ -67,7 +66,7 @@ export const metadata = {
 };
 
 export default async function LocaleLayout({ children, params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const isArabic = locale === "ar";
 
   // Validate locale
@@ -86,7 +85,7 @@ export default async function LocaleLayout({ children, params }) {
   }
 
   return (
-    <html lang={locale} dir={isArabic ? "rtl" : "ltr"}>
+    <html lang={locale} suppressHydrationWarning>
       <head>
         {/* Add Arabic font if needed */}
         {isArabic && (
@@ -104,6 +103,7 @@ export default async function LocaleLayout({ children, params }) {
         className={`${isArabic ? cairo.variable : dm.variable} ${
           isArabic ? "" : josefin.variable
         } body`}
+        suppressHydrationWarning
       >
         {/* Google Analytics Script */}
         <Script

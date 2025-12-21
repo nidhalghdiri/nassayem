@@ -1,16 +1,16 @@
 "use client";
-import PropertyMap from "../../../../components/elements/PropertyMap";
-import RangeSlider from "../../../../components/elements/RangeSlider";
-import SidebarFilter from "../../../../components/elements/SidebarFilter";
-import TabNav from "../../../../components/elements/TabNav";
-import VideoPopup from "../../../../components/elements/VideoPopup";
-import Layout from "../../../../components/layout/Layout";
+import PropertyMap from "@/components/elements/PropertyMap";
+import RangeSlider from "@/components/elements/RangeSlider";
+import SidebarFilter from "@/components/elements/SidebarFilter";
+import TabNav from "@/components/elements/TabNav";
+import VideoPopup from "@/components/elements/VideoPopup";
+import Layout from "@/components/layout/Layout";
 import Link from "next/link";
 import { useState } from "react";
 import { Autoplay, Navigation, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { useParams } from "next/navigation";
-import properties from "../../../../data/properties.json";
+import properties from "@/data/properties.json";
 
 const swiperOptions = {
   modules: [Autoplay, Pagination, Navigation],

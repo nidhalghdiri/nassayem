@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import LayoutAdmin from "../../../components/layout/LayoutAdmin";
+import LayoutAdmin from "@/components/layout/LayoutAdmin";
 import {
   Clock,
   CheckSquare,

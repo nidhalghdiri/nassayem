@@ -1,14 +1,13 @@
 // app/api/auth/[...nextauth]/route.js
 import NextAuth, { AuthOptions } from "next-auth";
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import Credentials from "next-auth/providers/credentials";
+import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { prisma } from "../../../../lib/prisma";
+import prisma from "@/lib/prisma";
 
 // IMPORTANT: Don't use the adapter with credentials provider unless you're using database sessions
 export const authOptions = {
   providers: [
-    Credentials({
+    CredentialsProvider({
       name: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },
@@ -22,6 +21,7 @@ export const authOptions = {
           }
 
           // Find user
+
           const user = await prisma.user.findUnique({
             where: {
               email: credentials.email.toLowerCase(),

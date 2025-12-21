@@ -1,3 +1,10 @@
+import "@/public/css/bootstrap.min.css";
+import "@/public/fonts/font-icons.css";
+import "@/public/fonts/fonts.css";
+import "@/public/css/swiper-bundle.min.css";
+import "@/public/css/animate.css";
+import "@/public/css/styles.css";
+import "@/public/css/dashboard.css";
 import { DM_Sans } from "next/font/google";
 import AuthProvider from "./providers/SessionProvider";
 
@@ -38,7 +45,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={dm.className}>
+    <html lang="en" className={dm.className} suppressHydrationWarning>
       <head>
         {/* Add viewport meta tag */}
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -47,7 +54,7 @@ export default function RootLayout({ children }) {
         {/* Add canonical URL */}
         <link rel="canonical" href="https://nassayem.com" />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

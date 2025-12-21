@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import LanguageSwitcher from "../../LanguageSwitcher";
 import Menu from "../Menu";
 import MobileMenu from "../MobileMenu";
-import { useTranslations } from "../../../lib/translations";
+import { useTranslations } from "@/lib/translations";
 
 export default function Header1({
   scroll,
@@ -34,7 +34,6 @@ export default function Header1({
         className={`main-header fixed-header ${hcls ? "header-style-2" : ""} ${
           scroll ? "fixed-header is-fixed" : ""
         } ${currentLocale === "ar" ? "rtl" : "ltr"}`}
-        dir={currentLocale === "ar" ? "rtl" : "ltr"}
       >
         {/* Header Lower */}
         <div className="header-lower">
