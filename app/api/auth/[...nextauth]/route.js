@@ -58,11 +58,11 @@ export const authOptions = {
           );
 
           // Verify password
-          // const isValid = await bcrypt.compare(
-          //   credentials.password,
-          //   user.password
-          // );
-          const isValid = credentials.password == user.password;
+          const isValid = await bcrypt.compare(
+            credentials.password,
+            user.password
+          );
+          // const isValid = credentials.password == user.password;
           console.log("✅ Password valid:", isValid);
           if (!isValid) {
             console.error("Invalid password for user:", credentials.email);
