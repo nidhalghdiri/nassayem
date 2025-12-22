@@ -15,7 +15,7 @@ export const authOptions = {
       },
       async authorize(credentials) {
         try {
-          console.log("Input credentials: ", credentials);
+          console.log("🚀 Authorization attempt for:", credentials.email);
           if (!credentials?.email || !credentials?.password) {
             throw new Error("Email and password required");
           }
@@ -25,7 +25,6 @@ export const authOptions = {
           const user = await prisma.user.findUnique({
             where: {
               email: credentials.email.toLowerCase(),
-              isActive: true,
             },
             include: {
               building: {
@@ -37,7 +36,8 @@ export const authOptions = {
               },
             },
           });
-          console.log("Founded User: ", user);
+          console.log("🔍 User found:", user ? "YES" : "NO");
+          console.log("📋 User details:", JSON.stringify(user, null, 2));
 
           if (!user) {
             console.error("No user found with email:", credentials.email);
@@ -49,17 +49,27 @@ export const authOptions = {
             return null;
           }
 
+          console.log("🔐 Password check:");
+          console.log("   Input password:", credentials.password);
+          console.log("   Stored password:", user.password);
+          console.log(
+            "   Comparison (plain text):",
+            credentials.password === user.password
+          );
+
           // Verify password
           // const isValid = await bcrypt.compare(
           //   credentials.password,
           //   user.password
           // );
           const isValid = credentials.password == user.password;
-
+          console.log("✅ Password valid:", isValid);
           if (!isValid) {
             console.error("Invalid password for user:", credentials.email);
             return null;
           }
+
+          console.log("🎉 Login successful for:", user.email);
 
           // Return user object (excluding password)
           return {
@@ -73,7 +83,12 @@ export const authOptions = {
             avatar: user.avatar,
           };
         } catch (error) {
-          console.error("Authorization error:", error);
+          console.error("💥 Authorization error:", error);
+          console.error("📝 Error details:", {
+            message: error.message,
+            code: error.code,
+            meta: error.meta,
+          });
           return null;
         }
       },
