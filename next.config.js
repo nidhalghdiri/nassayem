@@ -5,7 +5,7 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   env: {
-    NEXTAUTH_URL: process.env.NEXTAUTH_URL || "https://nassayem.com",
+    NEXTAUTH_URL: "https://nassayem.com",
   },
   // Remove built-in i18n since we're using custom middleware
   // i18n: {
