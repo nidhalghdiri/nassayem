@@ -125,6 +125,7 @@ export default function NewTaskPage() {
       );
       if (response.ok) {
         const data = await response.json();
+        console.log("Units: ", data.units);
         setUnits(data.units || []);
       }
     } catch (error) {
