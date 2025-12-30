@@ -145,6 +145,9 @@ model Task {
   inspections      Inspection[]
   notifications    Notification[]
   photos           Photo[]
+  parentTaskId   String?
+  parentTask     Task?     @relation("TaskChildren", fields: [parentTaskId], references: [id])
+  childTasks     Task[]    @relation("TaskChildren")
   assignedTo       User?          @relation("AssignedTasks", fields: [assignedToId], references: [id])
   building         Building       @relation(fields: [buildingId], references: [id])
   createdBy        User           @relation("CreatedTasks", fields: [createdById], references: [id])
@@ -190,6 +193,9 @@ model Inspection {
   status      String
   score       Int?
   notes       String?
+  checklist     Json
+  issues        Json?
+  photos        String[]
   taskId      String?
   createdAt   DateTime @default(now())
   inspector   User     @relation(fields: [inspectorId], references: [id])

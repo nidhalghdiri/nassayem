@@ -1,52 +1,48 @@
+// app/[locale]/admin/tasks/[id]/page.js
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import LayoutAdmin from "@/components/layout/LayoutAdmin";
-import TaskStatusBadge from "@/components/tasks/TaskStatusBadge";
-import TaskPriorityBadge from "@/components/tasks/TaskPriorityBadge";
-import TaskTypeBadge from "@/components/tasks/TaskTypeBadge";
 import {
   ArrowLeft,
   Edit,
-  Trash2,
-  Calendar,
+  CheckCircle,
   Clock,
-  User,
+  AlertCircle,
+  XCircle,
+  Users,
   Building,
   Home,
+  Calendar,
   DollarSign,
   FileText,
-  CheckCircle,
-  XCircle,
-  PlayCircle,
-  AlertCircle,
+  Wrench,
+  PlusCircle,
+  History,
   MessageSquare,
-  Image as ImageIcon,
-  Download,
-  Printer,
-  Share2,
-  MoreVertical,
+  Camera,
   ChevronRight,
-  Upload,
+  UserCheck,
+  ClipboardCheck,
 } from "lucide-react";
 
-export default function TaskDetailsPage() {
-  const router = useRouter();
+export default function TaskDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const taskId = params.id;
-
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
-  const [photos, setPhotos] = useState([]);
-  const [notes, setNotes] = useState([]);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
+  const [activeTab, setActiveTab] = useState("details");
+  const [relatedTasks, setRelatedTasks] = useState([]);
+  const [inspections, setInspections] = useState([]);
+  const [maintenanceTasks, setMaintenanceTasks] = useState([]);
+  const [newNote, setNewNote] = useState("");
+  const [addingNote, setAddingNote] = useState(false);
+  const [showInspectionForm, setShowInspectionForm] = useState(false);
+  const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
 
-  // Fetch task details
   useEffect(() => {
     if (taskId) {
       fetchTaskDetails();
@@ -57,52 +53,46 @@ export default function TaskDetailsPage() {
     try {
       setLoading(true);
       const response = await fetch(`/api/tasks/${taskId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setTask(data.task);
 
-      if (response.status === 404) {
-        router.push("/admin/tasks");
-        return;
+        // Fetch related tasks
+        if (data.task.unitId) {
+          fetchRelatedTasks(data.task.unitId);
+        }
       }
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch task details");
-      }
-
-      const data = await response.json();
-      console.log("Task Detail Data", data);
-      setTask(data.task);
-      setPhotos(data.photos || []);
-      setNotes(data.task.taskNotes || []);
     } catch (error) {
-      console.error("Error fetching task details:", error);
-      setErrorMessage("Failed to load task details");
+      console.error("Error fetching task:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle status update
-  const handleStatusUpdate = async (newStatus) => {
-    if (!task || updating) return;
-
-    const confirmationMessages = {
-      IN_PROGRESS: "Start this task?",
-      COMPLETED: "Mark this task as completed?",
-      CANCELLED: "Cancel this task?",
-      ESCALATED: "Escalate this task?",
-      PENDING: "Move back to pending?",
-    };
-
-    if (
-      !confirm(
-        confirmationMessages[newStatus] || `Change status to ${newStatus}?`
-      )
-    ) {
-      return;
-    }
-
+  const fetchRelatedTasks = async (unitId) => {
     try {
-      setUpdating(true);
-      const response = await fetch(`/api/tasks/${taskId}/status`, {
+      const [inspectionsRes, maintenanceRes] = await Promise.all([
+        fetch(`/api/tasks?unitId=${unitId}&type=INSPECTION&limit=5`),
+        fetch(`/api/tasks?unitId=${unitId}&type=MAINTENANCE&limit=5`),
+      ]);
+
+      if (inspectionsRes.ok) {
+        const inspectionsData = await inspectionsRes.json();
+        setInspections(inspectionsData.tasks || []);
+      }
+
+      if (maintenanceRes.ok) {
+        const maintenanceData = await maintenanceRes.json();
+        setMaintenanceTasks(maintenanceData.tasks || []);
+      }
+    } catch (error) {
+      console.error("Error fetching related tasks:", error);
+    }
+  };
+
+  const updateTaskStatus = async (newStatus) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -110,134 +100,56 @@ export default function TaskDetailsPage() {
         body: JSON.stringify({ status: newStatus }),
       });
 
-      const result = await response.json();
-
       if (response.ok) {
-        setTask((prev) => ({ ...prev, status: newStatus }));
-        setSuccessMessage(
-          `Task marked as ${newStatus.toLowerCase().replace("_", " ")}`
-        );
-        setTimeout(() => setSuccessMessage(""), 3000);
+        fetchTaskDetails();
 
-        // If completed, ask for actual time
-        if (newStatus === "COMPLETED" && !task.actualMinutes) {
-          const actualMinutes = prompt(
-            "Enter actual time spent (in minutes):",
-            task.estimatedMinutes || "60"
-          );
-          if (actualMinutes) {
-            await updateActualTime(parseInt(actualMinutes));
-          }
+        // If completing a cleaning task, suggest creating an inspection
+        if (newStatus === "COMPLETED" && task.type === "CLEANING") {
+          setTimeout(() => {
+            if (window.confirm("Create inspection for this unit?")) {
+              router.push(
+                `/admin/tasks/new?unitId=${task.unitId}&type=INSPECTION&buildingId=${task.buildingId}`
+              );
+            }
+          }, 1000);
         }
-      } else {
-        setErrorMessage(result.error || "Failed to update task status");
       }
     } catch (error) {
-      console.error("Error updating task status:", error);
-      setErrorMessage("Failed to update task status");
-    } finally {
-      setUpdating(false);
+      console.error("Error updating status:", error);
     }
   };
 
-  const updateActualTime = async (actualMinutes) => {
-    try {
-      const response = await fetch(`/api/tasks/${taskId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ actualMinutes }),
-      });
-
-      if (response.ok) {
-        setTask((prev) => ({ ...prev, actualMinutes }));
-      }
-    } catch (error) {
-      console.error("Error updating actual time:", error);
-    }
-  };
-
-  // Handle delete
-  const handleDelete = async () => {
-    try {
-      const response = await fetch(`/api/tasks/${taskId}`, {
-        method: "DELETE",
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        setSuccessMessage("Task deleted successfully");
-        setTimeout(() => {
-          router.push("/admin/tasks");
-        }, 1500);
-      } else {
-        setErrorMessage(result.error || "Failed to delete task");
-      }
-    } catch (error) {
-      console.error("Error deleting task:", error);
-      setErrorMessage("Failed to delete task");
-    }
-  };
-
-  // Add a note
-  const handleAddNote = async (e) => {
-    e.preventDefault();
-    const content = e.target.noteContent.value.trim();
-
-    if (!content) return;
+  const addTaskNote = async () => {
+    if (!newNote.trim()) return;
 
     try {
+      setAddingNote(true);
       const response = await fetch(`/api/tasks/${taskId}/notes`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({
+          content: newNote,
+          type: "INTERNAL",
+        }),
       });
 
       if (response.ok) {
-        const newNote = await response.json();
-        setNotes((prev) => [newNote, ...prev]);
-        e.target.noteContent.value = "";
-        setSuccessMessage("Note added successfully");
-        setTimeout(() => setSuccessMessage(""), 3000);
+        setNewNote("");
+        fetchTaskDetails();
       }
     } catch (error) {
       console.error("Error adding note:", error);
+    } finally {
+      setAddingNote(false);
     }
   };
 
-  // Format date
-  const formatDate = (dateString) => {
-    if (!dateString) return "Not set";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      weekday: "short",
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  // Format time
-  const formatTime = (minutes) => {
-    if (!minutes) return "N/A";
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours}h ${mins}m`;
-  };
-
-  // Check if overdue
-  const isOverdue = () => {
-    if (
-      !task?.dueDate ||
-      task.status === "COMPLETED" ||
-      task.status === "CANCELLED"
-    ) {
-      return false;
-    }
-    return new Date(task.dueDate) < new Date();
+  const createFollowupTask = (type) => {
+    router.push(
+      `/admin/tasks/new?unitId=${task.unitId}&type=${type}&buildingId=${task.buildingId}&parentTaskId=${taskId}`
+    );
   };
 
   if (loading) {
@@ -261,13 +173,37 @@ export default function TaskDetailsPage() {
     return (
       <LayoutAdmin>
         <div className="container-fluid">
-          <div className="alert alert-danger">
-            Task not found. <Link href="/admin/tasks">Return to tasks</Link>
-          </div>
+          <div className="alert alert-danger">Task not found</div>
+          <Link href="/admin/tasks" className="btn btn-primary">
+            Back to Tasks
+          </Link>
         </div>
       </LayoutAdmin>
     );
   }
+
+  const getStatusBadge = (status) => {
+    const variants = {
+      PENDING: "warning",
+      ASSIGNED: "info",
+      IN_PROGRESS: "primary",
+      COMPLETED: "success",
+      CANCELLED: "danger",
+      INSPECTION_REQUIRED: "warning",
+      MAINTENANCE_REQUIRED: "danger",
+    };
+    return `bg-${variants[status] || "secondary"}`;
+  };
+
+  const getPriorityBadge = (priority) => {
+    const variants = {
+      URGENT: "danger",
+      HIGH: "warning",
+      MEDIUM: "info",
+      LOW: "success",
+    };
+    return `bg-${variants[priority] || "secondary"}`;
+  };
 
   return (
     <LayoutAdmin>
@@ -284,49 +220,82 @@ export default function TaskDetailsPage() {
                   <ArrowLeft size={16} />
                   <span className="text-muted">Back to Tasks</span>
                 </Link>
-                <div className="d-flex align-items-center gap-3">
-                  <h1 className="h2 mb-0 text-dark">{task.title}</h1>
-                  <TaskStatusBadge status={task.status} />
-                  {isOverdue() && (
-                    <span className="badge bg-danger">Overdue</span>
-                  )}
-                </div>
-                <p className="text-muted mb-0">Task ID: {task.id}</p>
+                <h1 className="h2 mb-0 text-dark">{task.title}</h1>
+                <p className="text-muted mb-0">
+                  Task ID: {task.id} • Created:{" "}
+                  {new Date(task.createdAt).toLocaleDateString()}
+                </p>
               </div>
 
               <div className="d-flex align-items-center gap-2">
-                <button className="btn btn-outline-secondary d-flex align-items-center gap-2">
-                  <Printer size={16} />
-                  Print
-                </button>
-                <button className="btn btn-outline-secondary d-flex align-items-center gap-2">
-                  <Share2 size={16} />
-                  Share
-                </button>
                 <Link
                   href={`/admin/tasks/${taskId}/edit`}
-                  className="btn btn-primary d-flex align-items-center gap-2"
+                  className="btn btn-outline-primary d-flex align-items-center gap-2"
                 >
                   <Edit size={16} />
                   Edit Task
                 </Link>
                 <div className="dropdown">
                   <button
-                    className="btn btn-outline-secondary"
+                    className="btn btn-primary dropdown-toggle"
                     type="button"
                     data-bs-toggle="dropdown"
-                    aria-expanded="false"
                   >
-                    <MoreVertical size={16} />
+                    Actions
                   </button>
-                  <ul className="dropdown-menu dropdown-menu-end">
+                  <ul className="dropdown-menu">
+                    <li>
+                      <button
+                        className="dropdown-item"
+                        onClick={() => updateTaskStatus("IN_PROGRESS")}
+                        disabled={task.status === "IN_PROGRESS"}
+                      >
+                        <Clock size={16} className="me-2" />
+                        Start Task
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        className="dropdown-item"
+                        onClick={() => updateTaskStatus("COMPLETED")}
+                        disabled={task.status === "COMPLETED"}
+                      >
+                        <CheckCircle size={16} className="me-2" />
+                        Mark Complete
+                      </button>
+                    </li>
+                    <li>
+                      <hr className="dropdown-divider" />
+                    </li>
+                    <li>
+                      <button
+                        className="dropdown-item text-success"
+                        onClick={() => createFollowupTask("INSPECTION")}
+                      >
+                        <ClipboardCheck size={16} className="me-2" />
+                        Create Inspection
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        className="dropdown-item text-warning"
+                        onClick={() => createFollowupTask("MAINTENANCE")}
+                      >
+                        <Wrench size={16} className="me-2" />
+                        Create Maintenance
+                      </button>
+                    </li>
+                    <li>
+                      <hr className="dropdown-divider" />
+                    </li>
                     <li>
                       <button
                         className="dropdown-item text-danger"
-                        onClick={() => setShowDeleteModal(true)}
+                        onClick={() => updateTaskStatus("CANCELLED")}
+                        disabled={task.status === "CANCELLED"}
                       >
-                        <Trash2 size={16} className="me-2" />
-                        Delete Task
+                        <XCircle size={16} className="me-2" />
+                        Cancel Task
                       </button>
                     </li>
                   </ul>
@@ -336,556 +305,545 @@ export default function TaskDetailsPage() {
           </div>
         </div>
 
-        {/* Success/Error Messages */}
-        {successMessage && (
-          <div
-            className="alert alert-success alert-dismissible fade show d-flex align-items-center mb-4"
-            role="alert"
-          >
-            <CheckCircle className="me-2" size={20} />
-            <div>{successMessage}</div>
-            <button
-              type="button"
-              className="btn-close"
-              onClick={() => setSuccessMessage("")}
-            ></button>
-          </div>
-        )}
-
-        {errorMessage && (
-          <div
-            className="alert alert-danger alert-dismissible fade show d-flex align-items-center mb-4"
-            role="alert"
-          >
-            <AlertCircle className="me-2" size={20} />
-            <div>{errorMessage}</div>
-            <button
-              type="button"
-              className="btn-close"
-              onClick={() => setErrorMessage("")}
-            ></button>
-          </div>
-        )}
-
-        <div className="row">
-          {/* Left Column - Task Details */}
-          <div className="col-lg-8">
-            {/* Task Info Card */}
-            <div className="card shadow-sm mb-4">
-              <div className="card-header bg-white">
-                <h5 className="mb-0">Task Details</h5>
-              </div>
+        {/* Status Bar */}
+        <div className="row mb-4">
+          <div className="col-12">
+            <div className="card shadow-sm">
               <div className="card-body">
                 <div className="row">
-                  <div className="col-md-6 mb-3">
-                    <h6 className="text-muted small mb-2">DESCRIPTION</h6>
-                    <p className="mb-0">
-                      {task.description || "No description provided"}
-                    </p>
-                  </div>
-
-                  <div className="col-md-6 mb-3">
-                    <h6 className="text-muted small mb-2">TYPE & PRIORITY</h6>
-                    <div className="d-flex align-items-center gap-3">
-                      <TaskTypeBadge type={task.type} />
-                      <TaskPriorityBadge priority={task.priority} />
-                    </div>
-                  </div>
-
-                  {task.maintenanceType && (
-                    <div className="col-md-6 mb-3">
-                      <h6 className="text-muted small mb-2">
-                        MAINTENANCE TYPE
-                      </h6>
-                      <p className="mb-0">{task.maintenanceType}</p>
-                    </div>
-                  )}
-
-                  {task.notes && (
-                    <div className="col-12 mb-3">
-                      <h6 className="text-muted small mb-2">
-                        ADDITIONAL NOTES
-                      </h6>
-                      <p className="mb-0">{task.notes}</p>
-                    </div>
-                  )}
-
-                  <div className="col-md-6 mb-3">
-                    <h6 className="text-muted small mb-2">CREATED</h6>
-                    <p className="mb-0">
-                      {formatDate(task.createdAt)} by{" "}
-                      {task.createdBy?.name || "Unknown"}
-                    </p>
-                  </div>
-
-                  <div className="col-md-6 mb-3">
-                    <h6 className="text-muted small mb-2">LAST UPDATED</h6>
-                    <p className="mb-0">{formatDate(task.updatedAt)}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Location & Assignment Card */}
-            <div className="card shadow-sm mb-4">
-              <div className="card-header bg-white">
-                <h5 className="mb-0">Location & Assignment</h5>
-              </div>
-              <div className="card-body">
-                <div className="row">
-                  <div className="col-md-6 mb-3">
-                    <h6 className="text-muted small mb-2">BUILDING</h6>
-                    <div className="d-flex align-items-center gap-2">
-                      <Building size={16} className="text-muted" />
-                      <Link
-                        href={`/admin/buildings/${task.building?.id}`}
-                        className="text-decoration-none"
+                  <div className="col-md-3">
+                    <div className="d-flex flex-column">
+                      <small className="text-muted">STATUS</small>
+                      <span
+                        className={`badge ${getStatusBadge(task.status)} fs-6`}
                       >
-                        {task.building?.name}
-                      </Link>
-                    </div>
-                  </div>
-
-                  <div className="col-md-6 mb-3">
-                    <h6 className="text-muted small mb-2">UNIT</h6>
-                    <div className="d-flex align-items-center gap-2">
-                      <Home size={16} className="text-muted" />
-                      <Link
-                        href={`/admin/units/${task.unit?.id}`}
-                        className="text-decoration-none"
-                      >
-                        {task.unit?.title} - Floor {task.unit?.floor}
-                      </Link>
-                    </div>
-                  </div>
-
-                  <div className="col-md-6 mb-3">
-                    <h6 className="text-muted small mb-2">CREATED BY</h6>
-                    <div className="d-flex align-items-center gap-2">
-                      <User size={16} className="text-muted" />
-                      <span>{task.createdBy?.name || "Unknown"}</span>
-                      <span className="badge bg-secondary small">
-                        {task.createdBy?.role}
+                        {task.status.replace(/_/g, " ")}
                       </span>
                     </div>
                   </div>
-
-                  <div className="col-md-6 mb-3">
-                    <h6 className="text-muted small mb-2">ASSIGNED TO</h6>
-                    <div className="d-flex align-items-center gap-2">
-                      <User size={16} className="text-muted" />
+                  <div className="col-md-3">
+                    <div className="d-flex flex-column">
+                      <small className="text-muted">PRIORITY</small>
+                      <span
+                        className={`badge ${getPriorityBadge(
+                          task.priority
+                        )} fs-6`}
+                      >
+                        {task.priority}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="col-md-3">
+                    <div className="d-flex flex-column">
+                      <small className="text-muted">TYPE</small>
+                      <span className="fs-6">{task.type}</span>
+                    </div>
+                  </div>
+                  <div className="col-md-3">
+                    <div className="d-flex flex-column">
+                      <small className="text-muted">ASSIGNED TO</small>
                       {task.assignedTo ? (
-                        <>
+                        <div className="d-flex align-items-center gap-2">
+                          <Users size={16} />
                           <span>{task.assignedTo.name}</span>
-                          <span className="badge bg-secondary small">
-                            {task.assignedTo.role}
-                          </span>
-                        </>
+                        </div>
                       ) : (
                         <span className="text-muted">Unassigned</span>
                       )}
                     </div>
                   </div>
-
-                  {task.escalatedTo && (
-                    <div className="col-md-6 mb-3">
-                      <h6 className="text-muted small mb-2">ESCALATED TO</h6>
-                      <div className="d-flex align-items-center gap-2">
-                        <AlertCircle size={16} className="text-warning" />
-                        <span>{task.escalatedTo.name}</span>
-                      </div>
-                      {task.escalationReason && (
-                        <p className="small text-muted mt-1 mb-0">
-                          Reason: {task.escalationReason}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Timeline & Scheduling Card */}
-            <div className="card shadow-sm mb-4">
-              <div className="card-header bg-white">
-                <h5 className="mb-0">Timeline & Scheduling</h5>
-              </div>
-              <div className="card-body">
-                <div className="row">
-                  <div className="col-md-6 mb-3">
-                    <h6 className="text-muted small mb-2">DUE DATE</h6>
-                    <div className="d-flex align-items-center gap-2">
-                      <Calendar size={16} className="text-muted" />
-                      <span>
-                        {task.dueDate
-                          ? formatDate(task.dueDate)
-                          : "No due date"}
-                      </span>
-                      {isOverdue() && (
-                        <span className="badge bg-danger small">Overdue</span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="col-md-6 mb-3">
-                    <h6 className="text-muted small mb-2">ESTIMATED TIME</h6>
-                    <div className="d-flex align-items-center gap-2">
-                      <Clock size={16} className="text-muted" />
-                      <span>{formatTime(task.estimatedMinutes)}</span>
-                    </div>
-                  </div>
-
-                  {task.startedAt && (
-                    <div className="col-md-6 mb-3">
-                      <h6 className="text-muted small mb-2">STARTED AT</h6>
-                      <div className="d-flex align-items-center gap-2">
-                        <PlayCircle size={16} className="text-primary" />
-                        <span>{formatDate(task.startedAt)}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {task.completedAt && (
-                    <div className="col-md-6 mb-3">
-                      <h6 className="text-muted small mb-2">COMPLETED AT</h6>
-                      <div className="d-flex align-items-center gap-2">
-                        <CheckCircle size={16} className="text-success" />
-                        <span>{formatDate(task.completedAt)}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {task.actualMinutes && (
-                    <div className="col-md-6 mb-3">
-                      <h6 className="text-muted small mb-2">ACTUAL TIME</h6>
-                      <div className="d-flex align-items-center gap-2">
-                        <Clock size={16} className="text-muted" />
-                        <span>{formatTime(task.actualMinutes)}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Status Actions */}
-                <div className="mt-4 pt-3 border-top">
-                  <h6 className="text-muted small mb-3">CHANGE STATUS</h6>
-                  <div className="d-flex flex-wrap gap-2">
-                    {task.status !== "IN_PROGRESS" &&
-                      task.status !== "COMPLETED" &&
-                      task.status !== "CANCELLED" && (
-                        <button
-                          className="btn btn-outline-primary"
-                          onClick={() => handleStatusUpdate("IN_PROGRESS")}
-                          disabled={updating}
-                        >
-                          <PlayCircle size={16} className="me-2" />
-                          Start Task
-                        </button>
-                      )}
-                    {task.status === "IN_PROGRESS" && (
-                      <button
-                        className="btn btn-outline-success"
-                        onClick={() => handleStatusUpdate("COMPLETED")}
-                        disabled={updating}
-                      >
-                        <CheckCircle size={16} className="me-2" />
-                        Mark Complete
-                      </button>
-                    )}
-                    {task.status === "PENDING" && (
-                      <button
-                        className="btn btn-outline-danger"
-                        onClick={() => handleStatusUpdate("CANCELLED")}
-                        disabled={updating}
-                      >
-                        <XCircle size={16} className="me-2" />
-                        Cancel Task
-                      </button>
-                    )}
-                    {task.status === "IN_PROGRESS" && (
-                      <button
-                        className="btn btn-outline-warning"
-                        onClick={() => {
-                          const reason = prompt("Enter escalation reason:");
-                          if (reason) {
-                            handleStatusUpdate("ESCALATED");
-                            // Note: You'd need to handle escalation separately with reason
-                          }
-                        }}
-                        disabled={updating}
-                      >
-                        <AlertCircle size={16} className="me-2" />
-                        Escalate
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Notes Section */}
-            <div className="card shadow-sm mb-4">
-              <div className="card-header bg-white">
-                <h5 className="mb-0 d-flex align-items-center">
-                  <MessageSquare size={20} className="me-2 text-primary" />
-                  Notes ({notes.length})
-                </h5>
-              </div>
-              <div className="card-body">
-                {/* Add Note Form */}
-                <form onSubmit={handleAddNote} className="mb-4">
-                  <div className="input-group">
-                    <textarea
-                      name="noteContent"
-                      className="form-control"
-                      placeholder="Add a note..."
-                      rows="2"
-                      required
-                    ></textarea>
-                    <button className="btn btn-primary" type="submit">
-                      Add Note
-                    </button>
-                  </div>
-                </form>
-
-                {/* Notes List */}
-                <div className="notes-list">
-                  {notes.length === 0 ? (
-                    <div className="text-center py-4 text-muted">
-                      <MessageSquare size={48} className="mb-3" />
-                      <p>No notes yet. Add the first note!</p>
-                    </div>
-                  ) : (
-                    notes.map((note) => (
-                      <div key={note.id} className="border-bottom pb-3 mb-3">
-                        <div className="d-flex justify-content-between align-items-start mb-2">
-                          <div className="d-flex align-items-center gap-2">
-                            <div className="small fw-semibold">
-                              {note.author?.name}
-                            </div>
-                            <div className="badge bg-secondary small">
-                              {note.author?.role}
-                            </div>
-                          </div>
-                          <div className="text-muted small">
-                            {formatDate(note.createdAt)}
-                          </div>
-                        </div>
-                        <p className="mb-0">{note.content}</p>
-                      </div>
-                    ))
-                  )}
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Right Column - Sidebar */}
-          <div className="col-lg-4">
-            {/* Cost Information Card */}
-            {(task.costEstimate || task.actualCost) && (
+        <div className="row">
+          {/* Left Column - Main Content */}
+          <div className="col-lg-8">
+            {/* Tabs */}
+            <ul className="nav nav-tabs mb-4">
+              <li className="nav-item">
+                <button
+                  className={`nav-link ${
+                    activeTab === "details" ? "active" : ""
+                  }`}
+                  onClick={() => setActiveTab("details")}
+                >
+                  <FileText size={16} className="me-1" />
+                  Details
+                </button>
+              </li>
+              <li className="nav-item">
+                <button
+                  className={`nav-link ${
+                    activeTab === "notes" ? "active" : ""
+                  }`}
+                  onClick={() => setActiveTab("notes")}
+                >
+                  <MessageSquare size={16} className="me-1" />
+                  Notes ({task.taskNotes?.length || 0})
+                </button>
+              </li>
+              <li className="nav-item">
+                <button
+                  className={`nav-link ${
+                    activeTab === "history" ? "active" : ""
+                  }`}
+                  onClick={() => setActiveTab("history")}
+                >
+                  <History size={16} className="me-1" />
+                  History
+                </button>
+              </li>
+              <li className="nav-item">
+                <button
+                  className={`nav-link ${
+                    activeTab === "related" ? "active" : ""
+                  }`}
+                  onClick={() => setActiveTab("related")}
+                >
+                  <ChevronRight size={16} className="me-1" />
+                  Related Tasks
+                </button>
+              </li>
+            </ul>
+
+            {/* Tab Content */}
+            {activeTab === "details" && (
               <div className="card shadow-sm mb-4">
-                <div className="card-header bg-white">
-                  <h5 className="mb-0 d-flex align-items-center">
-                    <DollarSign size={20} className="me-2 text-primary" />
-                    Cost Information
-                  </h5>
-                </div>
                 <div className="card-body">
-                  {task.costEstimate && (
-                    <div className="mb-3">
-                      <h6 className="text-muted small mb-2">ESTIMATED COST</h6>
-                      <h4 className="text-primary">
-                        ${parseFloat(task.costEstimate).toFixed(2)}
-                      </h4>
+                  <div className="row mb-4">
+                    <div className="col-12">
+                      <h5 className="mb-3">Description</h5>
+                      <p className="text-muted">
+                        {task.description || "No description provided"}
+                      </p>
                     </div>
-                  )}
-                  {task.actualCost && (
-                    <div className="mb-3">
-                      <h6 className="text-muted small mb-2">ACTUAL COST</h6>
-                      <h4
-                        className={
-                          task.actualCost > task.costEstimate
-                            ? "text-danger"
-                            : "text-success"
-                        }
+                  </div>
+
+                  <div className="row">
+                    <div className="col-md-6 mb-3">
+                      <h6 className="text-muted mb-2">
+                        <Building size={16} className="me-2" />
+                        Location
+                      </h6>
+                      <div className="d-flex flex-column">
+                        <strong>{task.building?.name}</strong>
+                        <span>
+                          {task.unit?.title} • Floor {task.unit?.floor}
+                        </span>
+                        <small className="text-muted">
+                          {task.unit?.location}
+                        </small>
+                      </div>
+                    </div>
+
+                    <div className="col-md-6 mb-3">
+                      <h6 className="text-muted mb-2">
+                        <Calendar size={16} className="me-2" />
+                        Schedule
+                      </h6>
+                      <div className="d-flex flex-column">
+                        <div>
+                          <strong>Due Date:</strong>{" "}
+                          {task.dueDate
+                            ? new Date(task.dueDate).toLocaleDateString()
+                            : "No due date"}
+                        </div>
+                        <div>
+                          <strong>Estimated Time:</strong>{" "}
+                          {task.estimatedMinutes
+                            ? `${task.estimatedMinutes} minutes`
+                            : "Not estimated"}
+                        </div>
+                        <div>
+                          <strong>Created:</strong>{" "}
+                          {new Date(task.createdAt).toLocaleString()}
+                        </div>
+                        {task.completedAt && (
+                          <div>
+                            <strong>Completed:</strong>{" "}
+                            {new Date(task.completedAt).toLocaleString()}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {task.maintenanceType && (
+                      <div className="col-md-6 mb-3">
+                        <h6 className="text-muted mb-2">
+                          <Wrench size={16} className="me-2" />
+                          Maintenance Details
+                        </h6>
+                        <div className="d-flex flex-column">
+                          <strong>Type:</strong> {task.maintenanceType}
+                          {task.costEstimate && (
+                            <div className="mt-1">
+                              <strong>Cost Estimate:</strong> $
+                              {task.costEstimate}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="col-md-6 mb-3">
+                      <h6 className="text-muted mb-2">
+                        <UserCheck size={16} className="me-2" />
+                        Assignment
+                      </h6>
+                      <div className="d-flex flex-column">
+                        <div>
+                          <strong>Created By:</strong>{" "}
+                          {task.createdBy?.name || "Unknown"}
+                        </div>
+                        <div>
+                          <strong>Assigned To:</strong>{" "}
+                          {task.assignedTo?.name || "Unassigned"}
+                        </div>
+                        {task.escalatedTo && (
+                          <div>
+                            <strong>Escalated To:</strong>{" "}
+                            {task.escalatedTo.name}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {task.notes && (
+                      <div className="col-12 mb-3">
+                        <h6 className="text-muted mb-2">
+                          <FileText size={16} className="me-2" />
+                          Additional Notes
+                        </h6>
+                        <p className="mb-0">{task.notes}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "notes" && (
+              <div className="card shadow-sm mb-4">
+                <div className="card-body">
+                  <h5 className="mb-3">Add Note</h5>
+                  <div className="mb-4">
+                    <textarea
+                      className="form-control"
+                      rows="3"
+                      placeholder="Add a note about this task..."
+                      value={newNote}
+                      onChange={(e) => setNewNote(e.target.value)}
+                    />
+                    <div className="mt-2 d-flex justify-content-end">
+                      <button
+                        className="btn btn-primary"
+                        onClick={addTaskNote}
+                        disabled={addingNote || !newNote.trim()}
                       >
-                        ${parseFloat(task.actualCost).toFixed(2)}
-                      </h4>
+                        {addingNote ? "Adding..." : "Add Note"}
+                      </button>
+                    </div>
+                  </div>
+
+                  <h5 className="mb-3">Task Notes</h5>
+                  {task.taskNotes && task.taskNotes.length > 0 ? (
+                    <div className="list-group">
+                      {task.taskNotes.map((note) => (
+                        <div key={note.id} className="list-group-item">
+                          <div className="d-flex justify-content-between align-items-start">
+                            <div className="me-3">
+                              <div className="d-flex align-items-center mb-1">
+                                <strong>{note.createdBy?.name}</strong>
+                                <small className="text-muted ms-2">
+                                  {new Date(note.createdAt).toLocaleString()}
+                                </small>
+                                <span
+                                  className={`badge bg-${
+                                    note.type === "INTERNAL"
+                                      ? "info"
+                                      : "warning"
+                                  } ms-2`}
+                                >
+                                  {note.type}
+                                </span>
+                              </div>
+                              <p className="mb-0">{note.content}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-muted">No notes yet</p>
                     </div>
                   )}
                 </div>
               </div>
             )}
 
-            {/* Photos Card */}
-            <div className="card shadow-sm mb-4">
-              <div className="card-header bg-white">
-                <h5 className="mb-0 d-flex align-items-center">
-                  <ImageIcon size={20} className="me-2 text-primary" />
-                  Photos ({photos.length})
-                </h5>
-              </div>
-              <div className="card-body">
-                {photos.length === 0 ? (
-                  <div className="text-center py-4 text-muted">
-                    <ImageIcon size={48} className="mb-3" />
-                    <p>No photos uploaded</p>
-                  </div>
-                ) : (
-                  <div className="row g-2">
-                    {photos.slice(0, 6).map((photo, index) => (
-                      <div key={photo.id} className="col-4">
-                        <div className="border rounded overflow-hidden">
-                          <img
-                            src={photo.url}
-                            alt={`Task photo ${index + 1}`}
-                            className="img-fluid"
-                            style={{
-                              height: "100px",
-                              width: "100%",
-                              objectFit: "cover",
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                    {photos.length > 6 && (
-                      <div className="col-12 text-center mt-2">
-                        <button className="btn btn-sm btn-outline-secondary">
-                          View all {photos.length} photos
+            {activeTab === "related" && (
+              <div className="card shadow-sm mb-4">
+                <div className="card-body">
+                  <div className="row">
+                    {/* Inspections */}
+                    <div className="col-md-6 mb-4">
+                      <h5 className="d-flex justify-content-between align-items-center mb-3">
+                        <span>
+                          <ClipboardCheck size={18} className="me-2" />
+                          Recent Inspections
+                        </span>
+                        <button
+                          className="btn btn-sm btn-outline-primary"
+                          onClick={() => createFollowupTask("INSPECTION")}
+                        >
+                          <PlusCircle size={14} className="me-1" />
+                          New Inspection
                         </button>
-                      </div>
-                    )}
+                      </h5>
+                      {inspections.length > 0 ? (
+                        <div className="list-group">
+                          {inspections.map((inspection) => (
+                            <Link
+                              key={inspection.id}
+                              href={`/admin/tasks/${inspection.id}`}
+                              className="list-group-item list-group-item-action"
+                            >
+                              <div className="d-flex justify-content-between align-items-center">
+                                <div>
+                                  <strong>{inspection.title}</strong>
+                                  <div className="small text-muted">
+                                    {new Date(
+                                      inspection.createdAt
+                                    ).toLocaleDateString()}
+                                  </div>
+                                </div>
+                                <span
+                                  className={`badge ${getStatusBadge(
+                                    inspection.status
+                                  )}`}
+                                >
+                                  {inspection.status}
+                                </span>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-3">
+                          <p className="text-muted">No inspections found</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Maintenance Tasks */}
+                    <div className="col-md-6 mb-4">
+                      <h5 className="d-flex justify-content-between align-items-center mb-3">
+                        <span>
+                          <Wrench size={18} className="me-2" />
+                          Maintenance History
+                        </span>
+                        <button
+                          className="btn btn-sm btn-outline-warning"
+                          onClick={() => createFollowupTask("MAINTENANCE")}
+                        >
+                          <PlusCircle size={14} className="me-1" />
+                          New Maintenance
+                        </button>
+                      </h5>
+                      {maintenanceTasks.length > 0 ? (
+                        <div className="list-group">
+                          {maintenanceTasks.map((maintenance) => (
+                            <Link
+                              key={maintenance.id}
+                              href={`/admin/tasks/${maintenance.id}`}
+                              className="list-group-item list-group-item-action"
+                            >
+                              <div className="d-flex justify-content-between align-items-center">
+                                <div>
+                                  <strong>{maintenance.title}</strong>
+                                  <div className="small text-muted">
+                                    {maintenance.maintenanceType}
+                                  </div>
+                                </div>
+                                <span
+                                  className={`badge ${getStatusBadge(
+                                    maintenance.status
+                                  )}`}
+                                >
+                                  {maintenance.status}
+                                </span>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-3">
+                          <p className="text-muted">No maintenance tasks</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
-                <div className="mt-3">
-                  <button className="btn btn-outline-primary w-100">
-                    <Upload size={16} className="me-2" />
-                    Upload Photos
-                  </button>
                 </div>
               </div>
-            </div>
+            )}
+          </div>
 
-            {/* Quick Actions Card */}
+          {/* Right Column - Actions & Timeline */}
+          <div className="col-lg-4">
+            {/* Quick Actions */}
             <div className="card shadow-sm mb-4">
               <div className="card-header bg-white">
                 <h5 className="mb-0">Quick Actions</h5>
               </div>
               <div className="card-body">
                 <div className="d-grid gap-2">
-                  <Link
-                    href={`/admin/units/${task.unit?.id}`}
-                    className="btn btn-outline-primary d-flex align-items-center justify-content-between"
+                  {task.status !== "COMPLETED" &&
+                    task.status !== "CANCELLED" && (
+                      <>
+                        {task.status !== "IN_PROGRESS" && (
+                          <button
+                            className="btn btn-outline-primary"
+                            onClick={() => updateTaskStatus("IN_PROGRESS")}
+                          >
+                            <Clock size={16} className="me-2" />
+                            Start Task
+                          </button>
+                        )}
+                        <button
+                          className="btn btn-outline-success"
+                          onClick={() => updateTaskStatus("COMPLETED")}
+                        >
+                          <CheckCircle size={16} className="me-2" />
+                          Mark Complete
+                        </button>
+                      </>
+                    )}
+                  <button
+                    className="btn btn-outline-info"
+                    onClick={() => createFollowupTask("INSPECTION")}
                   >
-                    <span>View Unit Details</span>
-                    <ChevronRight size={16} />
-                  </Link>
-                  <Link
-                    href={`/admin/tasks?unitId=${task.unit?.id}`}
-                    className="btn btn-outline-secondary d-flex align-items-center justify-content-between"
+                    <ClipboardCheck size={16} className="me-2" />
+                    Create Inspection
+                  </button>
+                  <button
+                    className="btn btn-outline-warning"
+                    onClick={() => createFollowupTask("MAINTENANCE")}
                   >
-                    <span>View Unit Tasks</span>
-                    <ChevronRight size={16} />
-                  </Link>
-                  <Link
-                    href={`/admin/buildings/${task.building?.id}`}
-                    className="btn btn-outline-secondary d-flex align-items-center justify-content-between"
-                  >
-                    <span>View Building</span>
-                    <ChevronRight size={16} />
-                  </Link>
-                  {task.assignedTo && (
-                    <Link
-                      href={`/admin/users/${task.assignedTo?.id}`}
-                      className="btn btn-outline-info d-flex align-items-center justify-content-between"
+                    <Wrench size={16} className="me-2" />
+                    Create Maintenance
+                  </button>
+                  {task.status !== "CANCELLED" && (
+                    <button
+                      className="btn btn-outline-danger"
+                      onClick={() => updateTaskStatus("CANCELLED")}
                     >
-                      <span>View Assigned Staff</span>
-                      <ChevronRight size={16} />
-                    </Link>
+                      <XCircle size={16} className="me-2" />
+                      Cancel Task
+                    </button>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Task Metadata Card */}
-            <div className="card shadow-sm">
+            {/* Timeline */}
+            <div className="card shadow-sm mb-4">
               <div className="card-header bg-white">
-                <h5 className="mb-0">Task Metadata</h5>
+                <h5 className="mb-0">Task Timeline</h5>
               </div>
               <div className="card-body">
-                <div className="small">
-                  <div className="d-flex justify-content-between mb-2">
-                    <span className="text-muted">Task ID:</span>
-                    <code>{task.id}</code>
+                <div className="timeline">
+                  <div className="timeline-item">
+                    <div className="timeline-marker bg-primary"></div>
+                    <div className="timeline-content">
+                      <h6 className="mb-1">Task Created</h6>
+                      <p className="text-muted small mb-0">
+                        {new Date(task.createdAt).toLocaleString()}
+                      </p>
+                      <small>By: {task.createdBy?.name}</small>
+                    </div>
                   </div>
-                  <div className="d-flex justify-content-between mb-2">
-                    <span className="text-muted">Created:</span>
-                    <span>{new Date(task.createdAt).toLocaleString()}</span>
-                  </div>
-                  <div className="d-flex justify-content-between mb-2">
-                    <span className="text-muted">Updated:</span>
-                    <span>{new Date(task.updatedAt).toLocaleString()}</span>
-                  </div>
-                  <div className="d-flex justify-content-between">
-                    <span className="text-muted">Version:</span>
-                    <span>v1.0</span>
-                  </div>
+                  {task.assignedTo && (
+                    <div className="timeline-item">
+                      <div className="timeline-marker bg-info"></div>
+                      <div className="timeline-content">
+                        <h6 className="mb-1">Assigned</h6>
+                        <p className="text-muted small mb-0">
+                          To: {task.assignedTo.name}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {task.startedAt && (
+                    <div className="timeline-item">
+                      <div className="timeline-marker bg-warning"></div>
+                      <div className="timeline-content">
+                        <h6 className="mb-1">Started</h6>
+                        <p className="text-muted small mb-0">
+                          {new Date(task.startedAt).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {task.completedAt && (
+                    <div className="timeline-item">
+                      <div className="timeline-marker bg-success"></div>
+                      <div className="timeline-content">
+                        <h6 className="mb-1">Completed</h6>
+                        <p className="text-muted small mb-0">
+                          {new Date(task.completedAt).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Related Information */}
+            <div className="card shadow-sm">
+              <div className="card-header bg-white">
+                <h5 className="mb-0">Unit Information</h5>
+              </div>
+              <div className="card-body">
+                <div className="mb-3">
+                  <h6 className="text-muted small mb-2">BUILDING</h6>
+                  <p className="mb-1">{task.building?.name}</p>
+                  <small className="text-muted">{task.building?.address}</small>
+                </div>
+                <div className="mb-3">
+                  <h6 className="text-muted small mb-2">UNIT</h6>
+                  <p className="mb-1">{task.unit?.title}</p>
+                  <small className="text-muted">
+                    Floor {task.unit?.floor} • {task.unit?.bedrooms} bedrooms
+                  </small>
+                </div>
+                <div className="mb-3">
+                  <h6 className="text-muted small mb-2">UNIT STATUS</h6>
+                  <span
+                    className={`badge bg-${
+                      task.unit?.status === "AVAILABLE" ? "success" : "warning"
+                    }`}
+                  >
+                    {task.unit?.status}
+                  </span>
+                </div>
+                <div className="d-grid">
+                  <Link
+                    href={`/admin/units/${task.unitId}`}
+                    className="btn btn-outline-primary btn-sm"
+                  >
+                    View Unit Details
+                  </Link>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Delete Modal */}
-      {showDeleteModal && (
-        <div
-          className="modal fade show"
-          style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
-        >
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Delete Task</h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowDeleteModal(false)}
-                ></button>
-              </div>
-              <div className="modal-body">
-                <p>Are you sure you want to delete this task?</p>
-                <div className="alert alert-danger">
-                  <strong>Warning:</strong> This action cannot be undone. All
-                  task data, including photos and notes, will be permanently
-                  deleted.
-                </div>
-                <p className="mb-0">
-                  Task: <strong>{task.title}</strong>
-                </p>
-              </div>
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary"
-                  onClick={() => setShowDeleteModal(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-danger"
-                  onClick={handleDelete}
-                >
-                  Delete Task
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </LayoutAdmin>
   );
 }
