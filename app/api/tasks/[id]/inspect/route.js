@@ -1,11 +1,9 @@
-// Add to your existing app/api/tasks/route.js or create separate endpoints
-
-// app/api/tasks/[id]/inspect/route.js
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
+// POST - Submit inspection
 export async function POST(request, { params }) {
   try {
     const session = await getServerSession(authOptions);
@@ -17,19 +15,28 @@ export async function POST(request, { params }) {
     const taskId = params.id;
     const data = await request.json();
 
-    // Update task with inspection results
-    const updatedTask = await prisma.task.update({
+    // Check if task exists
+    const task = await prisma.task.findUnique({
       where: { id: taskId },
-      data: {
-        status: data.status === "PASSED" ? "COMPLETED" : "MAINTENANCE_REQUIRED",
-        completedAt: new Date(),
-        notes: data.notes,
-      },
       include: {
         unit: true,
         building: true,
+        assignedTo: true,
       },
     });
+
+    if (!task) {
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    }
+
+    // Check permissions - only RECEPTIONIST, SUPERVISOR, ADMIN can inspect
+    const allowedRoles = ["RECEPTIONIST", "SUPERVISOR", "ADMIN", "DIRECTOR"];
+    if (!allowedRoles.includes(session.user.role)) {
+      return NextResponse.json(
+        { error: "You do not have permission to perform inspections" },
+        { status: 403 }
+      );
+    }
 
     // Create inspection record
     const inspection = await prisma.inspection.create({
@@ -38,50 +45,95 @@ export async function POST(request, { params }) {
         inspectorId: session.user.id,
         score: data.score,
         notes: data.notes,
-        status: data.status,
+        status: data.status, // PASSED or FAILED
         checklist: data.checklist,
-        issues: data.issues,
+        issues: data.issues || [],
+        photos: data.photos || [],
       },
     });
 
-    // Create maintenance tasks for issues requiring maintenance
+    // Update task status based on inspection result
+    let updatedTask;
     let maintenanceTaskId = null;
-    if (data.issues && data.issues.some((issue) => issue.requiresMaintenance)) {
-      const maintenanceTask = await prisma.task.create({
+
+    if (data.status === "PASSED") {
+      // Task passes inspection
+      updatedTask = await prisma.task.update({
+        where: { id: taskId },
         data: {
-          title: `Maintenance: ${updatedTask.unit.title}`,
-          description: `Maintenance required based on inspection findings. Issues: ${data.issues
-            .filter((i) => i.requiresMaintenance)
-            .map((i) => i.description)
-            .join(", ")}`,
-          type: "MAINTENANCE",
-          status: "PENDING",
-          priority: "HIGH",
-          unitId: updatedTask.unitId,
-          buildingId: updatedTask.buildingId,
-          createdById: session.user.id,
-          parentTaskId: taskId,
-          maintenanceType: "General",
+          status: "COMPLETED",
+          completedAt: new Date(),
+          notes: data.notes
+            ? `${task.notes || ""}\n\nInspection Notes: ${data.notes}`.trim()
+            : task.notes,
         },
       });
-      maintenanceTaskId = maintenanceTask.id;
+    } else {
+      // Task fails inspection
+      updatedTask = await prisma.task.update({
+        where: { id: taskId },
+        data: {
+          status: "MAINTENANCE_REQUIRED",
+          notes: data.notes
+            ? `${task.notes || ""}\n\nInspection Notes: ${data.notes}\nScore: ${
+                data.score
+              }%`.trim()
+            : task.notes,
+        },
+      });
+
+      // Create maintenance tasks for issues that require maintenance
+      const maintenanceIssues =
+        data.issues?.filter((issue) => issue.requiresMaintenance) || [];
+
+      if (maintenanceIssues.length > 0) {
+        for (const issue of maintenanceIssues) {
+          const maintenanceTask = await prisma.task.create({
+            data: {
+              title: `Maintenance: ${issue.description.substring(0, 50)}...`,
+              description: `Issue from inspection: ${
+                issue.description
+              }\n\nCategory: ${issue.category}\nPriority: ${
+                issue.priority
+              }\nEstimated Cost: ${issue.estimatedCost || "Not specified"}`,
+              type: "MAINTENANCE",
+              status: "PENDING",
+              priority: issue.priority || "HIGH",
+              unitId: task.unitId,
+              buildingId: task.buildingId,
+              createdById: session.user.id,
+              parentTaskId: taskId,
+              maintenanceType:
+                issue.category === "safety" ? "Safety" : "General",
+              costEstimate: issue.estimatedCost
+                ? parseFloat(issue.estimatedCost)
+                : null,
+            },
+          });
+          maintenanceTaskId = maintenanceTask.id;
+        }
+      }
     }
 
-    // Notify relevant users
-    if (updatedTask.assignedToId) {
+    // Create notifications
+    // Notify task assignee
+    if (task.assignedToId) {
       await prisma.notification.create({
         data: {
           type: "inspection_completed",
           title: "Inspection Completed",
-          message: `Inspection for task "${updatedTask.title}" has been completed with score: ${data.score}%`,
-          recipientId: updatedTask.assignedToId,
+          message: `Inspection for task "${
+            task.title
+          }" has been ${data.status.toLowerCase()} with score: ${data.score}%`,
+          recipientId: task.assignedToId,
           taskId: taskId,
+          inspectionId: inspection.id,
         },
       });
     }
 
-    // Notify supervisor if failed
-    if (data.status === "FAILED") {
+    // Notify supervisor if failed or score is low
+    if (data.status === "FAILED" || data.score < 70) {
       const supervisor = await prisma.user.findFirst({
         where: { role: "SUPERVISOR" },
       });
@@ -90,10 +142,13 @@ export async function POST(request, { params }) {
         await prisma.notification.create({
           data: {
             type: "inspection_failed",
-            title: "Inspection Failed",
-            message: `Inspection for ${updatedTask.unit.title} failed with score: ${data.score}%`,
+            title: `Inspection ${
+              data.status === "FAILED" ? "Failed" : "Needs Attention"
+            }`,
+            message: `Inspection for ${task.unit.title} scored ${data.score}% and requires attention`,
             recipientId: supervisor.id,
             taskId: taskId,
+            inspectionId: inspection.id,
           },
         });
       }
@@ -110,7 +165,48 @@ export async function POST(request, { params }) {
   } catch (error) {
     console.error("Error submitting inspection:", error);
     return NextResponse.json(
-      { error: "Failed to submit inspection" },
+      { error: "Failed to submit inspection. Please try again." },
+      { status: 500 }
+    );
+  }
+}
+
+// GET - Get all inspections for a task
+export async function GET(request, { params }) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const taskId = params.id;
+
+    const inspections = await prisma.inspection.findMany({
+      where: { taskId },
+      include: {
+        inspector: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      inspections,
+    });
+  } catch (error) {
+    console.error("Error fetching inspections:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch inspections" },
       { status: 500 }
     );
   }

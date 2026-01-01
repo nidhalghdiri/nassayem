@@ -276,6 +276,26 @@ export default function TaskDetailPage() {
                         Create Inspection
                       </button>
                     </li>
+                    {task.type === "CLEANING" &&
+                      task.status === "COMPLETED" && (
+                        <Link
+                          href={`/admin/tasks/${task.id}/inspect`}
+                          className="btn btn-success d-flex align-items-center gap-2"
+                        >
+                          <ClipboardCheck size={16} />
+                          Perform Inspection
+                        </Link>
+                      )}
+                    {task.type === "INSPECTION" &&
+                      task.status === "PENDING" && (
+                        <Link
+                          href={`/admin/tasks/${task.id}/inspect`}
+                          className="btn btn-success d-flex align-items-center gap-2"
+                        >
+                          <ClipboardCheck size={16} />
+                          Start Inspection
+                        </Link>
+                      )}
                     <li>
                       <button
                         className="dropdown-item text-warning"
