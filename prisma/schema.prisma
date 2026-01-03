@@ -106,7 +106,6 @@ model Unit {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   bookings    Booking[]
-  inspections Inspection[]
   tasks       Task[]
   building    Building     @relation(fields: [buildingId], references: [id])
   user        User         @relation(fields: [userId], references: [id])
@@ -188,7 +187,7 @@ model TaskNote {
 
 model Inspection {
   id          String   @id @default(cuid())
-  unitId      String
+  taskId      String?
   inspectorId String
   status      String
   score       Int?
@@ -196,11 +195,15 @@ model Inspection {
   checklist     Json
   issues        Json?
   photos        String[]
-  taskId      String?
+
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
   inspector   User     @relation(fields: [inspectorId], references: [id])
   task        Task?    @relation(fields: [taskId], references: [id])
-  unit        Unit     @relation(fields: [unitId], references: [id])
+  @@index([taskId])
+  @@index([inspectorId])
+  @@index([status])
 }
 
 model Notification {
