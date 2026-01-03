@@ -127,7 +127,6 @@ export async function GET(request) {
                   },
                 },
               },
-              inspections: true,
               bookings: {
                 where: {
                   status: {
