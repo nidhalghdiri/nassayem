@@ -2,84 +2,81 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { withConnection } from "@/lib/db";
 
 // GET all units with filters and pagination
 export async function GET(request) {
-  return await withConnection(async (prisma) => {
-    try {
-      const session = await getServerSession(authOptions);
+  try {
+    const session = await getServerSession(authOptions);
 
-      if (!session) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-      const { searchParams } = new URL(request.url);
-      const page = parseInt(searchParams.get("page") || "1");
-      const limit = parseInt(searchParams.get("limit") || "10");
-      const status = searchParams.get("status");
-      const buildingId = searchParams.get("buildingId");
-      const search = searchParams.get("search") || "";
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const status = searchParams.get("status");
+    const buildingId = searchParams.get("buildingId");
+    const search = searchParams.get("search") || "";
 
-      const skip = (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
-      const where = {
-        ...(buildingId && buildingId !== "all" && { buildingId }),
-        ...(status && status !== "all" && { status }),
-      };
+    const where = {
+      ...(buildingId && buildingId !== "all" && { buildingId }),
+      ...(status && status !== "all" && { status }),
+    };
 
-      if (search) {
-        where.OR = [
-          { title: { contains: search, mode: "insensitive" } },
-          { description: { contains: search, mode: "insensitive" } },
-        ];
-      }
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+      ];
+    }
 
-      // Role-based filtering
-      if (session.user.role === "RECEPTIONIST" && session.user.building?.id) {
-        where.buildingId = session.user.building.id;
-      }
+    // Role-based filtering
+    if (session.user.role === "RECEPTIONIST" && session.user.building?.id) {
+      where.buildingId = session.user.building.id;
+    }
 
-      // Get units with pagination
-      const [units, total] = await Promise.all([
-        prisma.unit.findMany({
-          where,
-          select: {
-            id: true,
-            title: true,
-            floor: true,
-            status: true,
-            building: {
-              select: {
-                id: true,
-                name: true,
-              },
+    // Get units with pagination
+    const [units, total] = await Promise.all([
+      prisma.unit.findMany({
+        where,
+        select: {
+          id: true,
+          title: true,
+          floor: true,
+          status: true,
+          building: {
+            select: {
+              id: true,
+              name: true,
             },
           },
-          orderBy: { title: "asc" },
-          skip,
-          take: limit,
-        }),
-        prisma.unit.count({ where }),
-      ]);
-
-      return NextResponse.json({
-        units,
-        pagination: {
-          page,
-          limit,
-          total,
-          pages: Math.ceil(total / limit),
         },
-      });
-    } catch (error) {
-      console.error("Error fetching units:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch units" },
-        { status: 500 }
-      );
-    }
-  });
+        orderBy: { title: "asc" },
+        skip,
+        take: limit,
+      }),
+      prisma.unit.count({ where }),
+    ]);
+
+    return NextResponse.json({
+      units,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching units:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch units" },
+      { status: 500 }
+    );
+  }
 }
 
 // POST - Create new unit
