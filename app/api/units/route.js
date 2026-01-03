@@ -2,198 +2,84 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { withConnection } from "@/lib/db";
 
 // GET all units with filters and pagination
 export async function GET(request) {
-  try {
-    const session = await getServerSession(authOptions);
+  return await withConnection(async (prisma) => {
+    try {
+      const session = await getServerSession(authOptions);
 
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+      if (!session) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
 
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
-    const status = searchParams.get("status");
-    const buildingId = searchParams.get("buildingId");
-    const search = searchParams.get("search") || "";
-    const minPrice = searchParams.get("minPrice");
-    const maxPrice = searchParams.get("maxPrice");
-    const minBedrooms = searchParams.get("minBedrooms");
-    const maxBedrooms = searchParams.get("maxBedrooms");
+      const { searchParams } = new URL(request.url);
+      const page = parseInt(searchParams.get("page") || "1");
+      const limit = parseInt(searchParams.get("limit") || "10");
+      const status = searchParams.get("status");
+      const buildingId = searchParams.get("buildingId");
+      const search = searchParams.get("search") || "";
 
-    const skip = (page - 1) * limit;
+      const skip = (page - 1) * limit;
 
-    // Build where clause for search and filters
-    const where = {
-      OR: [
-        {
-          title: {
-            contains: search,
-            mode: "insensitive",
-          },
-        },
-        {
-          description: {
-            contains: search,
-            mode: "insensitive",
-          },
-        },
-        {
-          location: {
-            contains: search,
-            mode: "insensitive",
-          },
-        },
-        {
-          floor: {
-            contains: search,
-            mode: "insensitive",
-          },
-        },
-      ],
-    };
+      const where = {
+        ...(buildingId && buildingId !== "all" && { buildingId }),
+        ...(status && status !== "all" && { status }),
+      };
 
-    // Add status filter if specified
-    if (status && status !== "all") {
-      where.status = status;
-    }
+      if (search) {
+        where.OR = [
+          { title: { contains: search, mode: "insensitive" } },
+          { description: { contains: search, mode: "insensitive" } },
+        ];
+      }
 
-    // Add building filter if specified
-    if (buildingId && buildingId !== "all") {
-      where.buildingId = buildingId;
-    }
+      // Role-based filtering
+      if (session.user.role === "RECEPTIONIST" && session.user.building?.id) {
+        where.buildingId = session.user.building.id;
+      }
 
-    // Add price range filter
-    if (minPrice || maxPrice) {
-      where.price = {};
-      if (minPrice) where.price.gte = parseFloat(minPrice);
-      if (maxPrice) where.price.lte = parseFloat(maxPrice);
-    }
-
-    // Add bedrooms range filter
-    if (minBedrooms || maxBedrooms) {
-      where.bedrooms = {};
-      if (minBedrooms) where.bedrooms.gte = parseInt(minBedrooms);
-      if (maxBedrooms) where.bedrooms.lte = parseInt(maxBedrooms);
-    }
-
-    // Role-based filtering
-    if (session.user.role === "RECEPTIONIST" && session.user.building.id) {
-      where.buildingId = session.user.building.id;
-    }
-
-    // Get units with pagination
-    const [units, total] = await Promise.all([
-      prisma.unit.findMany({
-        where,
-        select: {
-          id: true,
-          title: true,
-          description: true,
-          price: true,
-          location: true,
-          floor: true,
-          bedrooms: true,
-          bathrooms: true,
-          area: true,
-          status: true,
-          images: true,
-          amenities: true,
-          createdAt: true,
-          updatedAt: true,
-          building: {
-            select: {
-              id: true,
-              name: true,
-              address: true,
-            },
-          },
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              role: true,
-            },
-          },
-          _count: {
-            select: {
-              tasks: {
-                where: {
-                  status: {
-                    in: ["PENDING", "IN_PROGRESS"],
-                  },
-                },
-              },
-              bookings: {
-                where: {
-                  status: {
-                    in: ["PENDING", "CONFIRMED"],
-                  },
-                },
+      // Get units with pagination
+      const [units, total] = await Promise.all([
+        prisma.unit.findMany({
+          where,
+          select: {
+            id: true,
+            title: true,
+            floor: true,
+            status: true,
+            building: {
+              select: {
+                id: true,
+                name: true,
               },
             },
           },
-          tasks: {
-            where: {
-              status: {
-                in: ["PENDING", "IN_PROGRESS"],
-              },
-            },
-            select: {
-              id: true,
-              title: true,
-              type: true,
-              status: true,
-              priority: true,
-            },
-            take: 3,
-          },
+          orderBy: { title: "asc" },
+          skip,
+          take: limit,
+        }),
+        prisma.unit.count({ where }),
+      ]);
+
+      return NextResponse.json({
+        units,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
         },
-        orderBy: { createdAt: "desc" },
-        skip,
-        take: limit,
-      }),
-      prisma.unit.count({ where }),
-    ]);
-
-    // Get statistics for dashboard
-    const stats = await prisma.unit.groupBy({
-      by: ["status"],
-      _count: {
-        _all: true,
-      },
-    });
-
-    // Get building list for filters
-    const buildings = await prisma.building.findMany({
-      select: {
-        id: true,
-        name: true,
-      },
-      orderBy: { name: "asc" },
-    });
-
-    return NextResponse.json({
-      units,
-      stats,
-      buildings,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
-    });
-  } catch (error) {
-    console.error("Error fetching units:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch units" },
-      { status: 500 }
-    );
-  }
+      });
+    } catch (error) {
+      console.error("Error fetching units:", error);
+      return NextResponse.json(
+        { error: "Failed to fetch units" },
+        { status: 500 }
+      );
+    }
+  });
 }
 
 // POST - Create new unit

@@ -19,6 +19,7 @@ import {
   Building,
   Eye,
 } from "lucide-react";
+import { debounce } from "@/lib/debounce";
 
 export default function EditTaskPage() {
   const router = useRouter();
@@ -190,18 +191,29 @@ export default function EditTaskPage() {
     }
   };
 
-  const fetchUnitsByBuilding = async (buildingId) => {
-    try {
-      const response = await fetch(`/api/units?buildingId=${buildingId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setUnits(data.units || []);
+  const fetchUnitsByBuilding = useCallback(
+    debounce(async (buildingId) => {
+      if (!buildingId) {
+        setUnits([]);
+        return;
       }
-    } catch (error) {
-      console.error("Error fetching units:", error);
-      setUnits([]);
-    }
-  };
+
+      try {
+        const response = await fetch(
+          `/api/units?buildingId=${buildingId}&limit=100`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Units fetched:", data.units?.length || 0);
+          setUnits(data.units || []);
+        }
+      } catch (error) {
+        console.error("Error fetching units:", error);
+        setUnits([]);
+      }
+    }, 300), // 300ms debounce
+    []
+  );
 
   // Validation
   const validateForm = () => {
