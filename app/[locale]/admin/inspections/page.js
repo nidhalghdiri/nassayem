@@ -337,7 +337,7 @@ export default function InspectionsPage() {
                         <td>
                           <div className="d-flex justify-content-end gap-2">
                             <Link
-                              href={`/admin/tasks/${inspection.taskId}`}
+                              href={`/admin/inspections/${inspection.id}`}
                               className="btn btn-sm btn-outline-primary"
                               title="View Task"
                             >
