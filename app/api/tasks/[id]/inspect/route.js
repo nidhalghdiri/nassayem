@@ -142,7 +142,6 @@ export async function POST(request, { params }) {
                     : null,
                 },
               });
-              maintenanceTaskId = maintenanceTask.id;
             }
           }
         }
