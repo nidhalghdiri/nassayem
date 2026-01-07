@@ -28,10 +28,12 @@ import {
   ClipboardCheck,
   Send,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 export default function TaskDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { data: session } = useSession();
   const taskId = params.id;
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
