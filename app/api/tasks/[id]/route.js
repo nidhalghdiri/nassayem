@@ -176,7 +176,7 @@ export async function PATCH(request, { params }) {
     // Assigned user can edit certain fields
     else if (isAssignedUser) {
       // Assigned users can only edit certain fields
-      const allowedFields = ["actualMinutes", "notes"];
+      const allowedFields = ["actualMinutes", "actualMinutes", "notes"];
       const restrictedFields = Object.keys(data).filter(
         (key) => !allowedFields.includes(key)
       );
@@ -235,12 +235,24 @@ export async function PATCH(request, { params }) {
 
     // Handle status changes
     const updateData = { ...data };
+    let unitStatusUpdate = null;
 
     if (
       data.status === "IN_PROGRESS" &&
       existingTask.status !== "IN_PROGRESS"
     ) {
       updateData.startedAt = new Date();
+      if (existingTask.type === "CLEANING") unitStatusUpdate = "CLEANING";
+    }
+
+    // Logic: FINISHING THE TASK (Moving to Inspection)
+    if (
+      data.status === "INSPECTION_REQUIRED" &&
+      existingTask.status !== "INSPECTION_REQUIRED"
+    ) {
+      updateData.isSupervisorApproved = false;
+      updateData.isReceptionistApproved = false;
+      unitStatusUpdate = "INSPECTING";
     }
 
     if (data.status === "COMPLETED" && existingTask.status !== "COMPLETED") {
@@ -279,25 +291,36 @@ export async function PATCH(request, { params }) {
     if (data.maintenanceType === "") updateData.maintenanceType = null;
 
     // Update task
-    const updatedTask = await prisma.task.update({
-      where: { id },
-      data: updateData,
-      include: {
-        assignedTo: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+    const updatedTask = await prisma.$transaction(async (tx) => {
+      const t = await prisma.task.update({
+        where: { id },
+        data: updateData,
+        include: {
+          assignedTo: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
           },
-        },
-        createdBy: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
           },
+          unit: true,
         },
-      },
+      });
+      if (unitStatusUpdate) {
+        await tx.unit.update({
+          where: { id: t.unitId },
+          data: { status: unitStatusUpdate },
+        });
+      }
+
+      return t;
     });
 
     // Create notifications for important changes

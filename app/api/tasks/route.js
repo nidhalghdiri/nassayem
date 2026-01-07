@@ -53,18 +53,49 @@ export async function GET(request) {
     console.log("Session User", session.user);
     // Role-based filtering
     if (session.user.role === "HOUSEKEEPING") {
-      where.OR = [
-        { assignedToId: session.user.id },
-        // Add other conditions if needed
-      ];
+      // where.OR = [
+      //   { assignedToId: session.user.id },
+      //   // Add other conditions if needed
+      // ];
+      where.assignedToId = session.user.id;
+      where.status = { in: ["PENDING", "IN_PROGRESS", "MAINTENANCE_REQUIRED"] };
     } else if (session.user.role === "RECEPTIONIST") {
-      if (session.user.building.id) {
-        where.buildingId = session.user.building.id;
-      } else {
-        return NextResponse.json(
-          { error: "Receptionist must be assigned to a building" },
-          { status: 403 }
-        );
+      // if (session.user.building.id) {
+      //   where.buildingId = session.user.building.id;
+      // } else {
+      //   return NextResponse.json(
+      //     { error: "Receptionist must be assigned to a building" },
+      //     { status: 403 }
+      //   );
+      // }
+      where.buildingId = session.user.building.id;
+      const waitingForRec = {
+        OR: [
+          { status: "INSPECTION_REQUIRED" },
+          {
+            status: "PARTIALLY_INSPECTED",
+            isReceptionistApproved: false,
+          },
+        ],
+      };
+      if (!status || status === "all") {
+        where.OR = [waitingForRec];
+      }
+    } else if (session.user.role === "SUPERVISOR") {
+      if (buildingId && buildingId !== "all") {
+        where.buildingId = buildingId;
+      }
+      const waitingForSup = {
+        OR: [
+          { status: "INSPECTION_REQUIRED" },
+          {
+            status: "PARTIALLY_INSPECTED",
+            isSupervisorApproved: false,
+          },
+        ],
+      };
+      if (!status || status === "all") {
+        where.OR = [waitingForSup];
       }
     }
 
@@ -204,9 +235,30 @@ export async function GET(request) {
     const statistics = {
       total,
       overdue: overdueCount,
+      needsSupervisor: 0,
+      needsReceptionist: 0,
       byStatus: {},
       byType: {},
     };
+
+    // Query specific counts for the dashboard
+    const [supCount, recCount] = await Promise.all([
+      prisma.task.count({
+        where: {
+          status: { in: ["INSPECTION_REQUIRED", "PARTIALLY_INSPECTED"] },
+          isSupervisorApproved: false,
+        },
+      }),
+      prisma.task.count({
+        where: {
+          status: { in: ["INSPECTION_REQUIRED", "PARTIALLY_INSPECTED"] },
+          isReceptionistApproved: false,
+        },
+      }),
+    ]);
+
+    statistics.needsSupervisor = supCount;
+    statistics.needsReceptionist = recCount;
 
     stats.forEach((stat) => {
       statistics.byStatus[stat.status] = statistics.byStatus[stat.status] || 0;
@@ -323,85 +375,101 @@ export async function POST(request) {
       }
     }
 
-    // Create task
-    const task = await prisma.task.create({
-      data: {
-        title: data.title.trim(),
-        description: data.description?.trim(),
-        type: data.type,
-        status: data.status || "PENDING",
-        priority: data.priority || "MEDIUM",
-        unitId: data.unitId,
-        buildingId: data.buildingId,
-        createdById: session.user.id,
-        assignedToId: data.assignedToId || null,
-        dueDate: data.dueDate ? new Date(data.dueDate) : null,
-        estimatedMinutes: data.estimatedMinutes || null,
-        maintenanceType: data.maintenanceType || null,
-        costEstimate: data.costEstimate ? data.costEstimate : null, // FIXED
-        actualCost: data.actualCost ? data.actualCost : null, // FIXED
-        notes: data.notes || null,
-      },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        type: true,
-        status: true,
-        priority: true,
-        dueDate: true,
-        estimatedMinutes: true,
-        maintenanceType: true,
-        costEstimate: true,
-        createdAt: true,
-        unit: {
-          select: {
-            id: true,
-            title: true,
-            floor: true,
-          },
-        },
-        building: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        createdBy: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        assignedTo: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
-    });
-
-    // Create notification for assigned user if applicable
-    if (task.assignedTo) {
-      await prisma.notification.create({
+    const result = await prisma.$transaction(async (tx) => {
+      // Create task
+      const task = await prisma.task.create({
         data: {
-          type: "task_assigned",
-          title: `New ${task.type.toLowerCase()} task assigned`,
-          message: `You have been assigned to: ${task.title}`,
-          recipientId: task.assignedTo.id,
-          taskId: task.id,
+          title: data.title.trim(),
+          description: data.description?.trim(),
+          type: data.type,
+          status: data.status || "PENDING",
+          priority: data.priority || "MEDIUM",
+          unitId: data.unitId,
+          buildingId: data.buildingId,
+          createdById: session.user.id,
+          assignedToId: data.assignedToId || null,
+          dueDate: data.dueDate ? new Date(data.dueDate) : null,
+          estimatedMinutes: data.estimatedMinutes || null,
+          maintenanceType: data.maintenanceType || null,
+          costEstimate: data.costEstimate ? data.costEstimate : null, // FIXED
+          actualCost: data.actualCost ? data.actualCost : null, // FIXED
+          notes: data.notes || null,
+        },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          type: true,
+          status: true,
+          priority: true,
+          dueDate: true,
+          estimatedMinutes: true,
+          maintenanceType: true,
+          costEstimate: true,
+          createdAt: true,
+          isSupervisorApproved: true,
+          isReceptionistApproved: true,
+          unit: {
+            select: {
+              id: true,
+              title: true,
+              status: true,
+              floor: true,
+            },
+          },
+          building: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          assignedTo: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
         },
       });
-    }
+
+      // 2. Logic: If Cleaning Task is created, Unit becomes DIRTY
+      const unitUpdateData = { currentTaskId: task.id };
+      if (data.type === "CLEANING") {
+        unitUpdateData.status = "DIRTY";
+      }
+      await tx.unit.update({
+        where: { id: data.unitId },
+        data: unitUpdateData,
+      });
+
+      // Create notification for assigned user if applicable
+      // if (task.assignedTo) {
+      //   await prisma.notification.create({
+      //     data: {
+      //       type: "task_assigned",
+      //       title: `New ${task.type.toLowerCase()} task assigned`,
+      //       message: `You have been assigned to: ${task.title}`,
+      //       recipientId: task.assignedTo.id,
+      //       taskId: task.id,
+      //     },
+      //   });
+      // }
+      return task;
+    });
 
     return NextResponse.json(
       {
         success: true,
         message: "Task created successfully",
-        task,
+        task: result,
       },
       { status: 201 }
     );

@@ -102,17 +102,6 @@ export default function TaskDetailPage() {
 
       if (response.ok) {
         fetchTaskDetails();
-
-        // If completing a cleaning task, suggest creating an inspection
-        if (newStatus === "COMPLETED" && task.type === "CLEANING") {
-          setTimeout(() => {
-            if (window.confirm("Create inspection for this unit?")) {
-              router.push(
-                `/admin/tasks/new?unitId=${task.unitId}&type=INSPECTION&buildingId=${task.buildingId}`
-              );
-            }
-          }, 1000);
-        }
       }
     } catch (error) {
       console.error("Error updating status:", error);
@@ -184,15 +173,15 @@ export default function TaskDetailPage() {
 
   const getStatusBadge = (status) => {
     const variants = {
-      PENDING: "warning",
-      ASSIGNED: "info",
-      IN_PROGRESS: "primary",
-      COMPLETED: "success",
-      CANCELLED: "danger",
-      INSPECTION_REQUIRED: "warning",
-      MAINTENANCE_REQUIRED: "danger",
+      PENDING: "bg-warning text-dark",
+      IN_PROGRESS: "bg-primary",
+      INSPECTION_REQUIRED: "bg-info text-dark", // Ready for first check
+      PARTIALLY_INSPECTED: "bg-info", // One person signed off
+      COMPLETED: "bg-success",
+      MAINTENANCE_REQUIRED: "bg-danger",
+      CANCELLED: "bg-secondary",
     };
-    return `bg-${variants[status] || "secondary"}`;
+    return variants[status] || "bg-secondary";
   };
 
   const getPriorityBadge = (priority) => {
@@ -235,26 +224,39 @@ export default function TaskDetailPage() {
                   <Edit size={16} />
                   Edit Task
                 </Link>
-                {/* Inspection Button - Moved OUTSIDE of dropdown */}
-                {task.type === "CLEANING" && task.status === "COMPLETED" && (
+                {/* 1. START TASK (For Housekeeping) */}
+                {task.status === "PENDING" && (
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => updateTaskStatus("IN_PROGRESS")}
+                  >
+                    <Clock size={16} className="me-2" /> Start Task
+                  </button>
+                )}
+                {/* 2. SUBMIT FOR INSPECTION (For Housekeeping) */}
+                {task.status === "IN_PROGRESS" && (
+                  <button
+                    className="btn btn-info"
+                    onClick={() => updateTaskStatus("INSPECTION_REQUIRED")}
+                  >
+                    <Send size={16} className="me-2" /> Finish & Request
+                    Inspection
+                  </button>
+                )}
+                {/* 3. PERFORM INSPECTION (For Supervisor/Receptionist) */}
+                {(task.status === "INSPECTION_REQUIRED" ||
+                  task.status === "PARTIALLY_INSPECTED") && (
                   <Link
                     href={`/admin/tasks/${task.id}/inspect`}
                     className="btn btn-success d-flex align-items-center gap-2"
                   >
                     <ClipboardCheck size={16} />
-                    Perform Inspection
+                    {session?.user?.role === "RECEPTIONIST"
+                      ? "Receptionist Sign-off"
+                      : "Technical Inspection"}
                   </Link>
                 )}
-                {task.type === "INSPECTION" && task.status === "PENDING" && (
-                  <Link
-                    href={`/admin/tasks/${task.id}/inspect`}
-                    className="btn btn-success d-flex align-items-center gap-2"
-                  >
-                    <ClipboardCheck size={16} />
-                    Start Inspection
-                  </Link>
-                )}
-                <div className="dropdown">
+                {/* <div className="dropdown">
                   <button
                     className="btn btn-primary dropdown-toggle"
                     type="button"
@@ -318,7 +320,7 @@ export default function TaskDetailPage() {
                       </button>
                     </li>
                   </ul>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>
@@ -374,6 +376,58 @@ export default function TaskDetailPage() {
                 </div>
               </div>
             </div>
+            {task.type === "CLEANING" && (
+              <div className="card shadow-sm mb-4 border-start border-4 border-info">
+                <div className="card-body">
+                  <h6 className="text-muted small mb-3">INSPECTION PROGRESS</h6>
+                  <div className="d-flex justify-content-around text-center">
+                    <div>
+                      <div
+                        className={`rounded-circle p-2 mb-2 ${
+                          task.isSupervisorApproved
+                            ? "bg-success text-white"
+                            : "bg-light text-muted"
+                        }`}
+                      >
+                        <UserCheck size={24} />
+                      </div>
+                      <small className="d-block">Supervisor</small>
+                      {task.isSupervisorApproved ? (
+                        <span className="badge bg-success">PASSED</span>
+                      ) : (
+                        <span className="badge bg-light text-dark">
+                          PENDING
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="align-self-center">
+                      <ChevronRight className="text-muted" />
+                    </div>
+
+                    <div>
+                      <div
+                        className={`rounded-circle p-2 mb-2 ${
+                          task.isReceptionistApproved
+                            ? "bg-success text-white"
+                            : "bg-light text-muted"
+                        }`}
+                      >
+                        <ClipboardCheck size={24} />
+                      </div>
+                      <small className="d-block">Receptionist</small>
+                      {task.isReceptionistApproved ? (
+                        <span className="badge bg-success">PASSED</span>
+                      ) : (
+                        <span className="badge bg-light text-dark">
+                          PENDING
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -814,6 +868,17 @@ export default function TaskDetailPage() {
                         <h6 className="mb-1">Completed</h6>
                         <p className="text-muted small mb-0">
                           {new Date(task.completedAt).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {task.isSupervisorApproved && (
+                    <div className="timeline-item">
+                      <div className="timeline-marker bg-success"></div>
+                      <div className="timeline-content">
+                        <h6 className="mb-1">Technical Pass</h6>
+                        <p className="text-muted small mb-0">
+                          Supervisor verified the unit.
                         </p>
                       </div>
                     </div>

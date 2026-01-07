@@ -15,6 +15,7 @@ export async function POST(request, { params }) {
 
     const taskId = params.id;
     const data = await request.json();
+    const userRole = session.user.role;
 
     // Check if task exists
     const task = await prisma.task.findUnique({
@@ -55,6 +56,7 @@ export async function POST(request, { params }) {
     const inspectionData = {
       taskId: taskId,
       inspectorId: session.user.id,
+      inspectorRole: userRole,
       score: data.score,
       notes: data.notes || null,
       status: data.status || "FAILED", // PASSED or FAILED
@@ -69,130 +71,101 @@ export async function POST(request, { params }) {
     );
 
     try {
-      const inspection = await prisma.inspection.create({
-        data: inspectionData,
-      });
-
-      console.log("Inspection created successfully:", inspection.id);
-
-      // Update task status based on inspection result
-      let updatedTask;
-      let maintenanceTaskId = null;
-
-      if (data.status === "PASSED") {
-        // Task passes inspection
-        updatedTask = await prisma.task.update({
-          where: { id: taskId },
-          data: {
-            status: "COMPLETED",
-            completedAt: new Date(),
-            notes: data.notes
-              ? `${task.notes || ""}\n\nInspection Notes: ${data.notes}`.trim()
-              : task.notes,
-          },
+      const result = await prisma.$transaction(async (tx) => {
+        const inspection = await prisma.inspection.create({
+          data: inspectionData,
         });
-      } else {
-        // Task fails inspection or status is FAILED
-        updatedTask = await prisma.task.update({
-          where: { id: taskId },
-          data: {
+
+        let taskUpdateData = {};
+        let unitUpdateData = {};
+        if (data.status === "PASSED") {
+          // Set approval flags based on role
+          const isSup =
+            userRole === "SUPERVISOR" ||
+            userRole === "ADMIN" ||
+            userRole === "DIRECTOR";
+          const isRec = userRole === "RECEPTIONIST";
+          // Logic for Dual Approval
+          const updatedSupApproved = isSup ? true : task.isSupervisorApproved;
+          const updatedRecApproved = isRec ? true : task.isReceptionistApproved;
+
+          taskUpdateData = {
+            isSupervisorApproved: updatedSupApproved,
+            isReceptionistApproved: updatedRecApproved,
+          };
+          if (updatedSupApproved && updatedRecApproved) {
+            // BOTH PASSED
+            taskUpdateData.status = "COMPLETED";
+            taskUpdateData.completedAt = new Date();
+            unitUpdateData.status = "AVAILABLE";
+          } else {
+            // ONLY ONE PASSED
+            taskUpdateData.status = "PARTIALLY_INSPECTED";
+            unitUpdateData.status = "INSPECTING";
+          }
+        } else {
+          // INSPECTION FAILED
+          taskUpdateData = {
             status: "MAINTENANCE_REQUIRED",
-            notes: data.notes
-              ? `${task.notes || ""}\n\nInspection Notes: ${
-                  data.notes
-                }\nScore: ${data.score}%`.trim()
-              : task.notes,
-          },
-        });
+            isSupervisorApproved: false, // Reset approvals on failure
+            isReceptionistApproved: false,
+          };
+          unitUpdateData.status = "MAINTENANCE";
 
-        // Create maintenance tasks for issues that require maintenance
-        const maintenanceIssues =
-          data.issues?.filter((issue) => issue.requiresMaintenance) || [];
+          const maintenanceIssues =
+            data.issues?.filter((issue) => issue.requiresMaintenance) || [];
 
-        if (maintenanceIssues.length > 0) {
-          for (const issue of maintenanceIssues) {
-            const maintenanceTask = await prisma.task.create({
-              data: {
-                title: `Maintenance: ${issue.description.substring(0, 50)}...`,
-                description: `Issue from inspection: ${
-                  issue.description
-                }\n\nCategory: ${issue.category || "general"}\nPriority: ${
-                  issue.priority || "HIGH"
-                }\nEstimated Cost: ${issue.estimatedCost || "Not specified"}`,
-                type: "MAINTENANCE",
-                status: "PENDING",
-                priority: issue.priority || "HIGH",
-                unitId: task.unitId,
-                buildingId: task.buildingId,
-                createdById: session.user.id,
-                parentTaskId: taskId,
-                maintenanceType:
-                  issue.category === "safety" ? "Safety" : "General",
-                costEstimate: issue.estimatedCost
-                  ? parseFloat(issue.estimatedCost)
-                  : null,
-              },
-            });
-            maintenanceTaskId = maintenanceTask.id;
+          if (maintenanceIssues.length > 0) {
+            for (const issue of maintenanceIssues) {
+              const maintenanceTask = await prisma.task.create({
+                data: {
+                  title: `Maintenance: ${issue.description.substring(
+                    0,
+                    50
+                  )}...`,
+                  description: `Issue from inspection: ${
+                    issue.description
+                  }\n\nCategory: ${issue.category || "general"}\nPriority: ${
+                    issue.priority || "HIGH"
+                  }\nEstimated Cost: ${issue.estimatedCost || "Not specified"}`,
+                  type: "MAINTENANCE",
+                  status: "PENDING",
+                  priority: issue.priority || "HIGH",
+                  unitId: task.unitId,
+                  buildingId: task.buildingId,
+                  createdById: session.user.id,
+                  parentTaskId: taskId,
+                  maintenanceType:
+                    issue.category === "safety" ? "Safety" : "General",
+                  costEstimate: issue.estimatedCost
+                    ? parseFloat(issue.estimatedCost)
+                    : null,
+                },
+              });
+              maintenanceTaskId = maintenanceTask.id;
+            }
           }
         }
-      }
 
-      // Create notifications
-      // Notify task assignee
-      if (task.assignedToId) {
-        await prisma.notification.create({
-          data: {
-            type: "inspection_completed",
-            title: "Inspection Completed",
-            message: `Inspection for task "${
-              task.title
-            }" has been ${data.status.toLowerCase()} with score: ${
-              data.score
-            }%`,
-            recipientId: task.assignedToId,
-            taskId: taskId,
-            inspectionId: inspection.id,
-          },
-        });
-      }
-
-      // Notify supervisor if failed or score is low
-      if (data.status === "FAILED" || data.score < 70) {
-        const supervisor = await prisma.user.findFirst({
-          where: { role: "SUPERVISOR" },
+        // 5. Apply Updates
+        const updatedTask = await tx.task.update({
+          where: { id: taskId },
+          data: taskUpdateData,
         });
 
-        if (supervisor) {
-          await prisma.notification.create({
-            data: {
-              type: "inspection_failed",
-              title: `Inspection ${
-                data.status === "FAILED" ? "Failed" : "Needs Attention"
-              }`,
-              message: `Inspection for ${task.unit?.title || "unit"} scored ${
-                data.score
-              }% and requires attention`,
-              recipientId: supervisor.id,
-              taskId: taskId,
-              inspectionId: inspection.id,
-            },
-          });
-        }
-      }
+        await tx.unit.update({
+          where: { id: task.unitId },
+          data: unitUpdateData,
+        });
 
-      return NextResponse.json({
-        success: true,
-        message: "Inspection submitted successfully",
-        inspection,
-        task: updatedTask,
-        requiresMaintenance: maintenanceTaskId !== null,
-        maintenanceTaskId,
+        return { inspection, updatedTask };
       });
+
+      return NextResponse.json({ success: true, ...result });
     } catch (prismaError) {
       console.error("Prisma error creating inspection:", prismaError);
       return NextResponse.json(
-        { error: `Database error: ${prismaError.message}` },
+        { error: "Failed to submit inspection" },
         { status: 500 }
       );
     }

@@ -99,6 +99,7 @@ model Unit {
   bathrooms   Int
   area        Int
   status      UnitStatus   @default(AVAILABLE)
+  currentTaskId String?
   buildingId  String
   images      String[]
   amenities   String[]
@@ -123,6 +124,8 @@ model Task {
   description      String?
   type             TaskType
   status           TaskStatus     @default(PENDING)
+  isSupervisorApproved   Boolean  @default(false)
+  isReceptionistApproved Boolean  @default(false)
   priority         Priority       @default(MEDIUM)
   createdById      String
   assignedToId     String?
@@ -189,6 +192,7 @@ model Inspection {
   id          String   @id @default(cuid())
   taskId      String?
   inspectorId String
+  inspectorRole UserRole
   status      String
   score       Int?
   notes       String?
@@ -256,7 +260,8 @@ enum TaskStatus {
   CANCELLED
   ESCALATED
   MAINTENANCE_REQUIRED
-  INSPECTION_REQUIRED 
+  INSPECTION_REQUIRED
+  PARTIALLY_INSPECTED
 }
 
 enum TaskType {
@@ -278,6 +283,9 @@ enum UnitStatus {
   RENTED
   MAINTENANCE
   UNAVAILABLE
+  DIRTY
+  CLEANING
+  INSPECTING
 }
 
 enum BookingStatus {
