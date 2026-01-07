@@ -103,15 +103,15 @@ export async function GET(request, { params }) {
         },
       }),
       // Inspection statistics
-      prisma.inspection.count({
-        where: { unitId },
-      }),
-      prisma.inspection.count({
-        where: {
-          unitId,
-          status: "passed",
-        },
-      }),
+      // prisma.inspection.count({
+      //   where: { unitId },
+      // }),
+      // prisma.inspection.count({
+      //   where: {
+      //     unitId,
+      //     status: "passed",
+      //   },
+      // }),
       // Recent tasks
       prisma.task.findMany({
         where: { unitId },

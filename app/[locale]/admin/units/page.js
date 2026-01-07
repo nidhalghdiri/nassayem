@@ -30,6 +30,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Wrench,
+  BrushCleaning,
 } from "lucide-react";
 
 export default function UnitsPage() {
@@ -196,6 +197,21 @@ export default function UnitsPage() {
         class: "bg-secondary",
         text: "Unavailable",
         icon: <XCircle size={12} />,
+      },
+      DIRTY: {
+        class: "bg-danger",
+        text: "Dirty",
+        icon: <Trash2 size={12} />,
+      },
+      CLEANING: {
+        class: "bg-warning",
+        text: "Cleaning",
+        icon: <BrushCleaning size={12} />,
+      },
+      INSPECTING: {
+        class: "bg-primary",
+        text: "Inspecting",
+        icon: <CheckCircle size={12} />,
       },
     };
     return statuses[status] || statuses.AVAILABLE;
