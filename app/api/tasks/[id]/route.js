@@ -275,13 +275,13 @@ export async function PATCH(request, { params }) {
 
     if (data.costEstimate !== undefined) {
       updateData.costEstimate = data.costEstimate
-        ? new Prisma.Decimal(data.costEstimate)
+        ? Prisma.Decimal(data.costEstimate)
         : null;
     }
 
     if (data.actualCost !== undefined) {
       updateData.actualCost = data.actualCost
-        ? new Prisma.Decimal(data.actualCost)
+        ? Prisma.Decimal(data.actualCost)
         : null;
     }
 
