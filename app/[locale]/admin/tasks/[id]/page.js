@@ -382,21 +382,35 @@ export default function TaskDetailPage() {
             {task.type === "CLEANING" && (
               <div className="card shadow-sm mb-4 border-start border-4 border-info">
                 <div className="card-body">
-                  <h6 className="text-muted small mb-3">INSPECTION PROGRESS</h6>
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                    <h6 className="text-muted small mb-0">INSPECTION STATUS</h6>
+                    <span className="badge bg-light text-muted">
+                      Double Sign-off System
+                    </span>
+                  </div>
                   <div className="d-flex justify-content-around text-center">
+                    {/* Supervisor Column */}
                     <div>
                       <div
-                        className={`rounded-circle p-2 mb-2 ${
+                        className={`rounded-circle p-2 mb-2 mx-auto ${
                           task.isSupervisorApproved
                             ? "bg-success text-white"
                             : "bg-light text-muted"
                         }`}
+                        style={{ width: "45px" }}
                       >
                         <UserCheck size={24} />
                       </div>
-                      <small className="d-block">Supervisor</small>
+                      <small className="d-block fw-bold">
+                        Technical/Supervisor
+                      </small>
                       {task.isSupervisorApproved ? (
-                        <span className="badge bg-success">PASSED</span>
+                        <div className="mt-1">
+                          <span className="badge bg-success">PASSED</span>
+                          <small className="d-block text-muted mt-1">
+                            By: {task.supervisor?.name || "System"}
+                          </small>
+                        </div>
                       ) : (
                         <span className="badge bg-light text-dark">
                           PENDING
@@ -408,19 +422,28 @@ export default function TaskDetailPage() {
                       <ChevronRight className="text-muted" />
                     </div>
 
+                    {/* Receptionist Column */}
                     <div>
                       <div
-                        className={`rounded-circle p-2 mb-2 ${
+                        className={`rounded-circle p-2 mb-2 mx-auto ${
                           task.isReceptionistApproved
                             ? "bg-success text-white"
                             : "bg-light text-muted"
                         }`}
+                        style={{ width: "45px" }}
                       >
                         <ClipboardCheck size={24} />
                       </div>
-                      <small className="d-block">Receptionist</small>
+                      <small className="d-block fw-bold">
+                        Receptionist/Final
+                      </small>
                       {task.isReceptionistApproved ? (
-                        <span className="badge bg-success">PASSED</span>
+                        <div className="mt-1">
+                          <span className="badge bg-success">PASSED</span>
+                          <small className="d-block text-muted mt-1">
+                            By: {task.receptionist?.name || "System"}
+                          </small>
+                        </div>
                       ) : (
                         <span className="badge bg-light text-dark">
                           PENDING

@@ -103,6 +103,30 @@ export async function POST(request, { params }) {
             taskUpdateData.status = "PARTIALLY_INSPECTED";
             unitUpdateData.status = "INSPECTING";
           }
+        } else if (data.status === "FAILED") {
+          // 1. Mark the parent task as "MAINTENANCE_REQUIRED"
+          // but DON'T necessarily block the unit if the issue is minor.
+
+          const spawnedTasks = await Promise.all(
+            data.issues.map((issue) =>
+              tx.task.create({
+                data: {
+                  title: `${issue.category}: ${issue.description.substring(
+                    0,
+                    30
+                  )}`,
+                  type: issue.requiresMaintenance ? "MAINTENANCE" : "CLEANING",
+                  status: "PENDING",
+                  priority: issue.priority || "MEDIUM",
+                  unitId: task.unitId,
+                  buildingId: task.buildingId,
+                  parentTaskId: taskId, // Linking to original cleaning task
+                  createdById: session.user.id,
+                  description: `Source: Inspection of ${task.title}. \nIssue: ${issue.description}`,
+                },
+              })
+            )
+          );
         } else {
           // INSPECTION FAILED
           taskUpdateData = {
